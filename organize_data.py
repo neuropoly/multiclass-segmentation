@@ -73,12 +73,18 @@ tp_dirs = [name for name in os.listdir(subject_dir) if not "." in name]
 
 ## REORIENT GT FROM CORRUPT RAI TO RAS
 
-for tp_dir in tp_dirs:
-	for dir in [ dir for dir in os.listdir(subject_dir+tp_dir) if not ".DS_Store" in dir]:
-		for im_name in [ image for image in os.listdir(subject_dir+tp_dir+"/"+dir) if ".nii" in image]:
-			image = Image(subject_dir+tp_dir+"/"+dir+"/"+im_name)
-			if image.orientation == "RAI":
-				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient RAS")
-				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient-data LAI")
-				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient-data LAS")
+# for tp_dir in tp_dirs:
+# 	for dir in [ dir for dir in os.listdir(subject_dir+tp_dir) if not ".DS_Store" in dir]:
+# 		for im_name in [ image for image in os.listdir(subject_dir+tp_dir+"/"+dir) if ".nii" in image]:
+# 			image = Image(subject_dir+tp_dir+"/"+dir+"/"+im_name)
+# 			if image.orientation == "RAI":
+# 				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient RAS")
+# 				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient-data LAI")
+# 				os.system("sct_image -i "+subject_dir+tp_dir+"/"+dir+"/"+im_name+" -setorient-data LAS")
 
+
+## TEMPORALLY SPLIT LUMB FILES
+
+for tp_dir in tp_dirs:
+	image_name = subject_dir+tp_dir+"/t2s_lumb/t2s_lumb.nii.gz"
+	os.system("sct_image -i "+image_name+" -split t")
