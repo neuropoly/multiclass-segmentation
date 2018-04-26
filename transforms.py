@@ -51,8 +51,8 @@ class ElasticTransform(object):
             sample['input'] = input_data
             sample['gt'] = gt_data
             
-            for i in range(len(gt_data)) :
-                gt_data[i].save("gt_"+str(i)+"_elastic.tiff")
+            # for i in range(len(gt_data)) :
+            #     gt_data[i].save("gt_"+str(i)+"_elastic.tiff")
         
         return sample
 
@@ -60,8 +60,8 @@ class ToPIL(object):
     def __call__(self, sample):
         sample['input'] = Image.fromarray(np.array(sample['input']), mode='F')
         sample['gt'] = [Image.fromarray(np.array(gt), mode='F') for gt in sample['gt']]
-        for i in range(len(sample['gt'])) :
-                sample['gt'][i].save("gt_"+str(i)+"_original.tiff")
+        # for i in range(len(sample['gt'])) :
+        #         sample['gt'][i].save("gt_"+str(i)+"_original.tiff")
         return sample
     
 class ToTensor(object):
@@ -106,8 +106,8 @@ class RandomRotation(object):
         gt_data = [F.rotate(gt, angle, self.resample, self.expand, self.center) for gt in gt_data]
         rdict['gt'] = gt_data
         
-        for i in range(len(gt_data)) :
-            gt_data[i].save("gt_"+str(i)+"_rotation.tiff")
+        # for i in range(len(gt_data)) :
+        #     gt_data[i].save("gt_"+str(i)+"_rotation.tiff")
             
         return rdict
     
@@ -177,8 +177,8 @@ class RandomResizedCrop(object):
         rdict['input'] = input_data
         rdict['gt'] = gt_data
 
-        for i in range(len(gt_data)) :
-            gt_data[i].save("gt_"+str(i)+"_resize.tiff")
+        # for i in range(len(gt_data)) :
+        #     gt_data[i].save("gt_"+str(i)+"_resize.tiff")
         
         return rdict
     

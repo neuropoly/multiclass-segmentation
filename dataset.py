@@ -34,7 +34,7 @@ class MRI2DSegDataset(Dataset):
         }
         
         if self.transform:
-            data_dict = self.transform(data_dict)## TODO : apply same tranform to input and gt
+            data_dict = self.transform(data_dict)
             
         return data_dict
         
