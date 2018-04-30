@@ -1,6 +1,7 @@
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from msct_image import Image as msct_Image
+import torch
 
 
 class MRI2DSegDataset(Dataset):
@@ -113,3 +114,12 @@ class MRI2DSegDataset(Dataset):
                     else:
                         fnames[1][line[2*i]]=line[2*i+1]
                 self.filenames.append((fnames[0], fnames[1]))
+
+
+def get_bg_gt(gts):
+    gt_size = gts[0].size()
+    bg_gt = torch.ones([gt_size[0],1,gt_size[2], gt_size[3]])
+    zeros = torch.zeros([gt_size[0],1,gt_size[2], gt_size[3]])
+    for gt in gts:
+        bg_gt = torch.max(bg_gt - gt, zeros)
+    return bg_gt

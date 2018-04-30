@@ -139,4 +139,24 @@ tp_dirs = [name for name in os.listdir(subject_dir) if not "." in name]
 # 				gt.save()
 
 
+## CREATE TRAINING AND VALIDATION FILES
 
+# def create_train_val(region, TP):
+# 	gts = ["", "_csf_manual", "_gm_manual", "_nawm_manual"]
+# 	for gt in gts:
+# 		image = Image(subject_dir+"tp_"+TP+"/t2s_"+region+"/t2s_"+region+gt+".nii.gz")
+# 		validation_slices = [0,4,9,14,19]
+# 		training_slices = [i for i in range(image.dim[2]) if i not in validation_slices]
+
+# 		image.data = np.delete(image.data, training_slices, 2)
+# 		image.setFileName(subject_dir+"tp_"+TP+"/t2s_"+region+"/t2s_"+region+gt+"_validation.nii.gz")
+# 		image.save()
+
+# 		image = Image(subject_dir+"tp_"+TP+"/t2s_"+region+"/t2s_"+region+gt+".nii.gz")
+# 		image.data = np.delete(image.data, validation_slices, 2)
+# 		image.setFileName(subject_dir+"tp_"+TP+"/t2s_"+region+"/t2s_"+region+gt+"_training.nii.gz")
+# 		image.save()
+
+# create_train_val("cerv", "0")
+# create_train_val("thor", "0")
+# create_train_val("lumb", "1")
