@@ -197,3 +197,19 @@ class RandomVerticalFlip(object):
             sample['input'] = F.vflip(sample['input'])
             sample['gt'] = [F.vflip(gt) for gt in sample['gt']]
         return sample
+
+
+class CenterCrop2D(object):
+    """Make a center crop of a specified size.
+
+    :param segmentation: if it is a segmentation task.
+                         When this is True (default), the crop
+                         will also be applied to the ground truth.
+    """
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, sample):
+        sample['input'] = F.center_crop(sample['input'], self.size)
+        sample['gt'] = [F.center_crop(gt, self.size) for gt in sample['gt']]
+        return sample

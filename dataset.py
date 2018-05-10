@@ -9,16 +9,14 @@ class MRI2DSegDataset(Dataset):
     
     :param txt_path_file: the path to a txt file containing the list of paths to input data files and gt masks.
     :param slice_axis: axis to make the slicing (default axial).
-    :param cache: if the data should be cached in memory or not.
     :param transform: transformations to apply.
     """
-    def __init__(self, txt_path_file, slice_axis=2, cache=True, transform=None):
+    def __init__(self, txt_path_file, slice_axis=2, transform=None):
         self.filenames = []
         self.header = {}
         self.class_names = []
         self.read_filenames(txt_path_file)
         self.transform = transform
-        self.cache = cache
         self.slice_axis = slice_axis
         self.handlers = []
         

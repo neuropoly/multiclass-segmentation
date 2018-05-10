@@ -79,6 +79,6 @@ class UNet(nn.Module):
         x10 = self.up3(x9, x1)
         
         x11 = self.conv9(x10)
-        preds = F.sigmoid(x11)        
+        preds = F.softmax(x11, 1)        
         
         return preds
