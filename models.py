@@ -37,8 +37,11 @@ class UpConv(nn.Module):
         return x
 
 class UNet(nn.Module):
-    def __init__(self, drop_rate=0.4, bn_momentum=0.1):
+    def __init__(self, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
         super(UNet, self).__init__()
+
+        self.mean = mean
+        self.std = std
         
         #Downsampling path
         self.conv1 = DownConv(1, 64, drop_rate, bn_momentum)
@@ -61,6 +64,8 @@ class UNet(nn.Module):
         self.conv9 = nn.Conv2d(64, 4, kernel_size=3, padding=1)
 
     def forward(self, x):
+        x0 = (x-self.mean)/self.std
+
         x1 = self.conv1(x)
         x2 = self.mp1(x1)
 

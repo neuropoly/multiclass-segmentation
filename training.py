@@ -8,7 +8,7 @@ args = parser.parse_args()
 
 patient_directory = args.path
 
-gpu_number = '1' # number of the GPU to use
+gpu_number = '7' # number of the GPU to use
 if args.GPU:
     gpu_number = str(args.GPU)
 
@@ -141,7 +141,7 @@ validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["tr
 
 ## CREATE NET ##
 
-net = UNet(drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+net = UNet(drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std)
 
 # To use multiple GPUs :
 #if torch.cuda.device_count() > 1:
@@ -221,7 +221,7 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     if "write_param_histograms" in parameters["training"].keys() and parameters["training"]["write_param_histograms"]:
         # write net parameters histograms (make the training significantly slower)
         for name, param in net.named_parameters():
-           writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch)
+            writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch)
 
 
     ## Validation ##  

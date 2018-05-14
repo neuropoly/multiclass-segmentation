@@ -2,6 +2,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from msct_image import Image as msct_Image
 import torch
+import math
 
 
 class MRI2DSegDataset(Dataset):
@@ -19,14 +20,22 @@ class MRI2DSegDataset(Dataset):
         self.transform = transform
         self.slice_axis = slice_axis
         self.handlers = []
+        self.mean = 0.
+        self.std = 0.
         
         self._load_files()
+
+        for seg_item in self.handlers:
+            self.std += np.mean((seg_item[0]-self.mean)**2)/len(self.handlers)
+        self.std = math.sqrt(self.std)
+
     
     def __len__(self):
         return len(self.handlers)
     
     def __getitem__(self, index):
         sample = self.handlers[index]
+
         data_dict = {
             'input': sample[0],
             'gt': [sample[i] for i in range(1, len(sample))]
@@ -41,6 +50,7 @@ class MRI2DSegDataset(Dataset):
     def _load_files(self):
         for input_filename, gt_dict in self.filenames:
             input_3D = msct_Image(input_filename)
+            self.mean += np.mean(input_3D.data)/len(self.filenames)
             if self.slice_axis == 0:
                 resolution = list(np.around(input_3D.dim[5:7], 2))
                 matrix_size = input_3D.dim[1:3]
@@ -85,6 +95,11 @@ class MRI2DSegDataset(Dataset):
                 else:
                     input_slice = input_3D.data[::,::,i]
                     gt_slices = [gt.data[::,::,i] for gt in gt_3D]
+
+                #sanity check for no overlap in gt masks
+                if np.max(sum(gt_slices))>1:
+                    raise RuntimeError('Ground truth masks overlapping.')
+
                 seg_item = [input_slice]
                 for gt_slice in gt_slices:
                     if gt_slice.shape != input_slice.shape:
@@ -115,6 +130,7 @@ class MRI2DSegDataset(Dataset):
 
 
 def get_bg_gt(gts):
+    # create the background mask as complementary to the other gt masks 
     gt_size = gts[0].size()
     bg_gt = torch.ones([gt_size[0],1,gt_size[2], gt_size[3]])
     zeros = torch.zeros([gt_size[0],1,gt_size[2], gt_size[3]])
