@@ -72,3 +72,16 @@ def accuracy_score(FP, FN, TP, TN):
         N = FP[i] + FN[i] + TP[i] + TN[i]
         accuracy.append(np.divide(TP[i] + TN[i], N) * 100.0)
     return accuracy
+
+
+def dice_score(pred, gts):
+    dice = []
+    np_pred = pred.numpy()
+    np_gts = [gt.numpy() for gt in gts]
+
+    for i in range(len(np_gts)):
+        intersection = 2*((np_pred==i)*np_gts[i]).sum()
+        union = (np_pred==i).sum()+np_gts[i].sum()
+        dice.append(intersection/union)
+
+    return dice

@@ -8,6 +8,14 @@ from PIL import Image
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
+def make_masks_exclusive(gts):
+    indexes = range(len(gts))
+    np.random.shuffle(indexes)
+    for i in range(len(indexes)):
+        for j in range(i):
+            gts[indexes[i]][gts[indexes[j]]>=gts[indexes[i]]]=0
+    return gts
+
 
 class ElasticTransform(object):
     def __init__(self, alpha_range, sigma_range, p=0.5):
@@ -45,14 +53,16 @@ class ElasticTransform(object):
                 gt = self.elastic_transform(gt, param_alpha, param_sigma)
                 gt[gt >= 0.5] = 1.0
                 gt[gt < 0.5] = 0.0
-                gt_data[i] = Image.fromarray(gt, mode='F')
+                gt_data[i] = gt
+
+            gt_data = make_masks_exclusive(gt_data)
+
+            for i in range(len(gt_data)):
+                gt_data[i] = Image.fromarray(gt_data[i], mode='F')
 
                 
             sample['input'] = input_data
             sample['gt'] = gt_data
-            
-            # for i in range(len(gt_data)) :
-            #     gt_data[i].save("gt_"+str(i)+"_elastic.tiff")
         
         return sample
 
@@ -60,8 +70,6 @@ class ToPIL(object):
     def __call__(self, sample):
         sample['input'] = Image.fromarray(np.array(sample['input']), mode='F')
         sample['gt'] = [Image.fromarray(np.array(gt), mode='F') for gt in sample['gt']]
-        # for i in range(len(sample['gt'])) :
-        #         sample['gt'][i].save("gt_"+str(i)+"_original.tiff")
         return sample
     
 class ToTensor(object):
@@ -105,9 +113,6 @@ class RandomRotation(object):
         gt_data = sample['gt']
         gt_data = [F.rotate(gt, angle, self.resample, self.expand, self.center) for gt in gt_data]
         rdict['gt'] = gt_data
-        
-        # for i in range(len(gt_data)) :
-        #     gt_data[i].save("gt_"+str(i)+"_rotation.tiff")
             
         return rdict
     
@@ -176,9 +181,6 @@ class RandomResizedCrop(object):
 
         rdict['input'] = input_data
         rdict['gt'] = gt_data
-
-        # for i in range(len(gt_data)) :
-        #     gt_data[i].save("gt_"+str(i)+"_resize.tiff")
         
         return rdict
     

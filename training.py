@@ -7,6 +7,8 @@ parser.add_argument("--GPU", help="define the number of the GPU to use", type=in
 args = parser.parse_args()
 
 patient_directory = args.path
+if patient_directory[-1]=="/":
+    patient_directory = patient_directory[:-1]
 
 gpu_number = '7' # number of the GPU to use
 if args.GPU:
@@ -52,6 +54,7 @@ def write_metrics(writer, predictions, gts, loss, epoch, tag):
     specificity = specificity_score(FP, FN, TP, TN)
     iou = intersection_over_union(FP, FN, TP, TN)
     accuracy = accuracy_score(FP, FN, TP, TN)
+    dice = dice_score(predictions, gts)
 
     writer.add_scalar("loss_"+tag, loss, epoch)
     for i in range(len(precision)):
@@ -60,6 +63,7 @@ def write_metrics(writer, predictions, gts, loss, epoch, tag):
         writer.add_scalar("specificity_"+str(i)+"_"+tag, specificity[i], epoch)
         writer.add_scalar("intersection_over_union_"+str(i)+"_"+tag, iou[i], epoch)
         writer.add_scalar("accuracy_"+str(i)+"_"+tag, accuracy[i], epoch)
+        writer.add_scalar("dice_"+str(i)+"_"+tag, dice[i], epoch)
 
 
 def write_images(writer, input, output, predictions, gts, epoch, tag):
@@ -130,12 +134,12 @@ crop_val = torch_transforms.Compose([toPIL, centerCrop, toTensor])
 
 # creating datasets
 # Datasets should be created with at least a toTensor transformation or a composed transformation with toTensor as last transformation since the network is excpecting tensors as input.
-training_dataset = MRI2DSegDataset(patient_directory+"/filenames_training.txt", transform = composed)
+training_dataset = MRI2DSegDataset(patient_directory+"/filenames_training.txt", transform = crop_val)
 validation_dataset = MRI2DSegDataset(patient_directory+"/filenames_validation.txt", transform = crop_val)
 
 # creating data loaders
-training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True)
-validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True)
+training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True)
+validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=False)
 
 
 
@@ -154,6 +158,7 @@ net = net.to(device)
 
 ## DEFINE LOSS, OPTIMIZER AND LR SCHEDULE ##
 
+# OPTIMIZER
 if parameters["training"]["optimizer"]=="sgd":
     if not "sgd_momentum" in parameters["training"]:
         parameters["training"]['sgd_momentum']=0.9
@@ -161,16 +166,34 @@ if parameters["training"]["optimizer"]=="sgd":
 elif parameters["training"]["optimizer"]=="adam":
     optimizer = optim.Adam(net.parameters(), lr=parameters["training"]['learning_rate'])
 
+# LOSS
 if parameters["training"]["loss_function"]=="dice":
-    loss_function = losses.dice_loss
 
+    if not "dice_square" in parameters["training"]:
+        parameters["training"]['dice_square']=True
+
+    if not "dice_smooth" in parameters["training"]:
+        parameters["training"]['dice_smooth']=0.001
+
+    loss_function = losses.Dice(square=parameters["training"]['dice_square'], smooth=parameters["training"]['dice_smooth'])
+    
+elif parameters["training"]["loss_function"]=="crossentropy":
+
+    loss_function = losses.CrossEntropy()
+
+# LR SCHEDULE
 if parameters["training"]["lr_schedule"]=="cosine":
+
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, parameters["training"]["nb_epochs"])
+
 elif parameters["training"]["lr_schedule"]=="poly":
+
     if not "poly_schedule_p" in parameters["training"]:
         parameters["training"]['poly_schedule_p']=0.9
-    lr_lambda = lambda epoch: (1-epoch/parameters["training"]["nb_epochs"])**parameters["training"]["poly_schedule_p"]
+
+    lr_lambda = lambda epoch: (1-float(epoch)/parameters["training"]["nb_epochs"])**parameters["training"]["poly_schedule_p"]
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
 else:
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 1)
 
@@ -179,10 +202,11 @@ else:
 ## TRAINING ##
 
 writer = SummaryWriter()
-writer.add_text("hyperparameters", json.dumps(parameters)) # add hyperparameters to description
-last_run_dir = sorted(os.listdir("./runs"))[-1] # get the name of the directory of the current run (to save the model in that directory)
+writer.add_text("hyperparameters", json.dumps(parameters)) # add the hyperparameters to the description
+log_dir = writer.file_writer.get_logdir() # get the name of the directory of the current run (to save the model in that directory)
 
-best_loss = 0.
+
+best_loss = float("inf")
 batch_length = len(training_dataloader)
 
 for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
@@ -239,7 +263,7 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
 
     if loss_sum < best_loss:
-        torch.save(net, "./runs/"+last_run_dir+"/best_model.pt")
+        torch.save(net, "./"+log_dir+"/best_model.pt")
 
     # metrics
     write_metrics(writer, predictions, gts, loss_sum, epoch, "validation")
@@ -254,9 +278,9 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
 
                 
-writer.export_scalars_to_json("./runs/"+last_run_dir+"/all_scalars.json")
+writer.export_scalars_to_json("./"+log_dir+"/all_scalars.json")
 writer.close()
 
-torch.save(net, "./runs/"+last_run_dir+"/final_model.pt")
+torch.save(net, "./"+log_dir+"/final_model.pt")
 
-print "training complete, model saved at ./runs/"+last_run_dir+"/final_model.pt"
+print "training complete, model saved at ./"+log_dir+"/final_model.pt"
