@@ -21,73 +21,16 @@ from dataset import *
 import transforms
 import json
 from torchvision import transforms as torch_transforms
-import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
-import torch.nn as nn
-import torch.nn.functional as F
+#import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
-import sys
 from models import UNet
 import losses
-from metrics import *
+import monitoring
 
-
-
-
-def write_metrics(writer, predictions, gts, loss, epoch, tag):
-    """
-    Write scalar metrics to tensorboard
-
-    :param writer: SummaryWriter object to write on
-    :param predictions: tensor containing predictions
-    :param gts: array of tensors containing ground truth
-    :param loss: tensor containing the loss value
-    :param epoch: int, number of the iteration
-    :param tag: string to specify which dataset is used (e.g. "training" or "validation")
-    """
-    FP, FN, TP, TN = numeric_score(predictions, gts)
-    precision = precision_score(FP, FN, TP, TN)
-    recall = recall_score(FP, FN, TP, TN)
-    specificity = specificity_score(FP, FN, TP, TN)
-    iou = intersection_over_union(FP, FN, TP, TN)
-    accuracy = accuracy_score(FP, FN, TP, TN)
-    dice = dice_score(predictions, gts)
-
-    writer.add_scalar("loss_"+tag, loss, epoch)
-    for i in range(len(precision)):
-        writer.add_scalar("precision_"+str(i)+"_"+tag, precision[i], epoch)
-        writer.add_scalar("recall_"+str(i)+"_"+tag, recall[i], epoch)
-        writer.add_scalar("specificity_"+str(i)+"_"+tag, specificity[i], epoch)
-        writer.add_scalar("intersection_over_union_"+str(i)+"_"+tag, iou[i], epoch)
-        writer.add_scalar("accuracy_"+str(i)+"_"+tag, accuracy[i], epoch)
-        writer.add_scalar("dice_"+str(i)+"_"+tag, dice[i], epoch)
-
-
-def write_images(writer, input, output, predictions, gts, epoch, tag):
-    """
-    Write images to tensorboard
-
-    :param writer: SummaryWriter object to write on
-    :param input: tensor containing input values
-    :param output: tensor containing output values
-    :param predictions: tensor containing predictions
-    :param gts: array of tensors containing ground truth
-    :param epoch: int, number of the iteration
-    :param tag: string to specify which dataset is used (e.g. "training" or "validation")
-    """
-    input_max = max(torch.max(input), 0.00000001)
-    input_image = vutils.make_grid(input/input_max, normalize=True)
-    writer.add_image('Input '+tag, input_image, epoch)
-    for i in range(len(gts)):
-        output_image = vutils.make_grid(output[i,::,::], normalize=True)
-        writer.add_image('Output class '+str(i)+' '+tag, output_image, epoch)
-        pred_image = vutils.make_grid(predictions==i, normalize=False)
-        writer.add_image('Prediction class '+str(i)+' '+tag, pred_image, epoch)
-        gt_image = vutils.make_grid(gts[i], normalize=True)
-        writer.add_image('GT class '+str(i)+' '+tag, gt_image, epoch)
 
 
 
@@ -96,14 +39,6 @@ def write_images(writer, input, output, predictions, gts, epoch, tag):
 path_to_json = patient_directory+'/parameters.json'
 
 parameters = json.load(open(path_to_json))
-
-if not "optimizer" in parameters["training"].keys():
-    parameters["training"]["optimizer"]="adam"
-if not "learning_rate" in parameters["training"].keys():
-    parameters["training"]["learning_rate"]=0.00001
-
-# TODO: define default values for parameters
-
 
 
 ## DEFINE DEVICE ##
@@ -119,23 +54,19 @@ if torch.cuda.is_available():
 ## CREATE DATASETS ##
 
 # defining transormations
-toTensor = transforms.ToTensor()
-toPIL = transforms.ToPIL()
 randomVFlip = transforms.RandomVerticalFlip()
-randomResizedCrop = transforms.RandomResizedCrop(parameters["transforms"]["crop_size"], scale=parameters["transforms"]["scale_range"], ratio=parameters["transforms"]["ratio_range"])
+randomResizedCrop = transforms.RandomResizedCrop(parameters["input"]["matrix_size"], scale=parameters["transforms"]["scale_range"], ratio=parameters["transforms"]["ratio_range"], dtype=parameters['input']['data_type'])
 randomRotation = transforms.RandomRotation(parameters["transforms"]["max_angle"])
-elasticTransform = transforms.ElasticTransform(parameters["transforms"]["alpha_range"], parameters["transforms"]["sigma_range"], parameters["transforms"]["elastic_rate"])
-centerCrop = transforms.CenterCrop2D(parameters["transforms"]["crop_size"])
+elasticTransform = transforms.ElasticTransform(alpha_range=parameters["transforms"]["alpha_range"], sigma_range=parameters["transforms"]["sigma_range"], p=parameters["transforms"]["elastic_rate"], dtype=parameters['input']['data_type'])
+channelShift = transforms.ChannelShift(parameters["transforms"]["channel_shift_range"], dtype=parameters['input']['data_type'])
+centerCrop = transforms.CenterCrop2D(parameters["input"]["matrix_size"])
 
 # creating composed transformation
-# Composed transformations should always contain toPIL as first transformations (since other transforamtions are made to work on PIL images) and toTensor as last transforamtion (since the network is excpecting tensors as input). 
-composed = torch_transforms.Compose([toPIL,randomVFlip,randomRotation,randomResizedCrop, elasticTransform, toTensor])
-crop_val = torch_transforms.Compose([toPIL, centerCrop, toTensor])
+composed = torch_transforms.Compose([randomVFlip,randomRotation,randomResizedCrop, elasticTransform])
 
 # creating datasets
-# Datasets should be created with at least a toTensor transformation or a composed transformation with toTensor as last transformation since the network is excpecting tensors as input.
-training_dataset = MRI2DSegDataset(patient_directory+"/filenames_training.txt", transform = crop_val)
-validation_dataset = MRI2DSegDataset(patient_directory+"/filenames_validation.txt", transform = crop_val)
+training_dataset = MRI2DSegDataset(patient_directory+"/filenames_training.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
+validation_dataset = MRI2DSegDataset(patient_directory+"/filenames_validation.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
 
 # creating data loaders
 training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True)
@@ -145,7 +76,7 @@ validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["tr
 
 ## CREATE NET ##
 
-net = UNet(drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std)
+net = UNet(nb_input_channels=1, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
 # To use multiple GPUs :
 #if torch.cuda.device_count() > 1:
@@ -221,8 +152,9 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
         optimizer.zero_grad()
         input = sample_batched['input'].to(device)
         output =  net(input)
-        gts = [get_bg_gt(sample_batched['gt'])]+sample_batched['gt'] # make an array of ground truths (with the computed background gt mask)
-        loss = loss_function(output, [gt.to(device) for gt in gts])
+        #gts = [get_bg_gt(sample_batched['gt'])]+sample_batched['gt'] # make an array of ground truths (with the computed background gt mask)
+        gts = sample_batched['gt']
+        loss = loss_function(output, gts.to(device))
         loss.backward()
         optimizer.step()
         loss_sum += loss.item()/batch_length
@@ -231,15 +163,15 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
     
     # metrics
-    write_metrics(writer, predictions, gts, loss_sum, epoch, "training")
+    monitoring.write_metrics(writer, predictions, gts, loss_sum, epoch, "training")
 
     # images
     input_for_image = sample_batched['input'][0]
-    output_for_image = output[0,::,::,::]
-    pred_for_image = predictions[0,0,::,::]
-    gts_for_image = [gt[0,::,::] for gt in gts]
+    output_for_image = output[0,:,:,:]
+    pred_for_image = predictions[0,0,:,:]
+    gts_for_image = gts[0]
 
-    write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
+    monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
 
     
     if "write_param_histograms" in parameters["training"].keys() and parameters["training"]["write_param_histograms"]:
@@ -255,8 +187,8 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
     for i_batch, sample_batched in enumerate(validation_dataloader):
         output =  net(sample_batched['input'].to(device))
-        gts = [get_bg_gt(sample_batched['gt'])]+sample_batched['gt']
-        loss = loss_function(output, [gt.to(device) for gt in gts])
+        gts = sample_batched['gt']
+        loss = loss_function(output, gts.to(device))
         loss_sum += loss.item()/len(validation_dataloader)
 
     predictions = torch.argmax(output, 1, keepdim=True).to("cpu")
@@ -266,15 +198,15 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
         torch.save(net, "./"+log_dir+"/best_model.pt")
 
     # metrics
-    write_metrics(writer, predictions, gts, loss_sum, epoch, "validation")
+    monitoring.write_metrics(writer, predictions, gts, loss_sum, epoch, "validation")
 
     #images
     input_for_image = sample_batched['input'][0]
-    output_for_image = output[0,::,::,::]
-    pred_for_image = predictions[0,0,::,::]
-    gts_for_image = [gt[0,::,::] for gt in gts]
+    output_for_image = output[0,:,:,:]
+    pred_for_image = predictions[0,0,:,:]
+    gts_for_image = gts[0]
 
-    write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "validation")
+    monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "validation")
 
 
                 

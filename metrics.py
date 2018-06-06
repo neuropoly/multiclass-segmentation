@@ -11,7 +11,7 @@ def numeric_score(pred, gts):
     return: tuple (FP, FN, TP, TN)
     """
     np_pred = pred.numpy()
-    np_gts = [gt.numpy() for gt in gts]
+    np_gts = [gts[:,i,:,:].numpy() for i in range(gts.size()[1])]
     FP = []
     FN = []
     TP = []
@@ -77,7 +77,7 @@ def accuracy_score(FP, FN, TP, TN):
 def dice_score(pred, gts):
     dice = []
     np_pred = pred.numpy()
-    np_gts = [gt.numpy() for gt in gts]
+    np_gts = [gts[:,i,:,:].numpy() for i in range(gts.size()[1])]
 
     for i in range(len(np_gts)):
         intersection = 2*((np_pred==i)*np_gts[i]).sum()

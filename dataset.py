@@ -1,114 +1,123 @@
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from msct_image import Image as msct_Image
+from PIL import Image 
 import torch
 import math
+import nibabel as nib
+
 
 
 class MRI2DSegDataset(Dataset):
     """This is a generic class for 2D (slice-wise) segmentation datasets.
+
+        The paths to the nifti files must be contained in a txt file following the structure (for an example with 2 classes): 
+
+        input <path to input 1> class_1 <path to class 1 gt mask of input 1> class_2 <path to class 2 gt mask of input 1>
+        input <path to input 2> class_1 <path to class 1 gt mask of input 2> class_2 <path to class 2 gt mask of input 2>
+
+        class_1 and class_2 can be any string (with no space) that will be used as class names. 
+        For multi-class segmentation, there is no need to provide the background mask, it will be computed as the complementary of all other masks. Each segmentation class ground truth mus be in different 1 channel file.
+        The inputs can be multichannel 2D images.
     
     :param txt_path_file: the path to a txt file containing the list of paths to input data files and gt masks.
-    :param slice_axis: axis to make the slicing (default axial).
-    :param transform: transformations to apply.
+    :param matrix_size: size of the slices (tuple of two integers).
+    :param orientation: string describing the orientation to use, e.g. "RAI".
+    :param resolution: string describing the resolution to use, e.g. "0.15x0.15".
+    :param data_type: data type to use for the tensors, e.g. "float32".
+    :param transform: transformation to apply for data augmentation. The transformation should take as argument and return a PIL image.
     """
-    def __init__(self, txt_path_file, slice_axis=2, transform=None):
+    def __init__(self, txt_path_file, matrix_size, orientation, resolution, data_type="float32", transform=None):
         self.filenames = []
-        self.header = {}
+        self.orientation = orientation
+        self.resolution = resolution
+        self.matrix_size = matrix_size
         self.class_names = []
         self.read_filenames(txt_path_file)
+        self.data_type = data_type
         self.transform = transform
-        self.slice_axis = slice_axis
         self.handlers = []
         self.mean = 0.
         self.std = 0.
         
         self._load_files()
 
-        for seg_item in self.handlers:
-            self.std += np.mean((seg_item[0]-self.mean)**2)/len(self.handlers)
+        for seg_item in self.handlers: # compute std of the whole dataset (for input normalization in network)
+            self.std += np.mean((seg_item['input']-self.mean)**2)/len(self.handlers)
         self.std = math.sqrt(self.std)
 
-    
     def __len__(self):
         return len(self.handlers)
     
     def __getitem__(self, index):
         sample = self.handlers[index]
+        sample = self.to_PIL(sample) # transform to PIL images to apply transformations
 
-        data_dict = {
-            'input': sample[0],
-            'gt': [sample[i] for i in range(1, len(sample))]
-        }
-        
         if self.transform:
-            data_dict = self.transform(data_dict)
-            
-        return data_dict
+            sample = self.transform(sample)
+
+        sample = self.to_tensor(sample) # transform to tensor to use in network
         
+        if len(sample['gt'])>1:    # if it is a multiclass problem
+            sample['gt'] = make_masks_exclusive(sample['gt']) # make sure gt masks are not overlapping due to transformations
+            sample['gt'] = self.add_background_gt(sample['gt']) # add background gt 
+            
+        return sample
     
     def _load_files(self):
         for input_filename, gt_dict in self.filenames:
-            input_3D = msct_Image(input_filename)
-            self.mean += np.mean(input_3D.data)/len(self.filenames)
-            if self.slice_axis == 0:
-                resolution = list(np.around(input_3D.dim[5:7], 2))
-                matrix_size = input_3D.dim[1:3]
-            elif self.slice_axis == 1:
-                resolution = list(np.around([input_3D.dim[4], input_3D.dim[6]], 2))
-                matrix_size = (input_3D.dim[0], input_3D.dim[2])
-            else:
-                if self.slice_axis != 2:
-                    print "Invalid slice axis given, replaced by default value of 2."
-                    self.slice_axis = 2
-                resolution = list(np.around(input_3D.dim[4:6], 2))
-                matrix_size = input_3D.dim[0:2]
-                
-            input_header = {"orientation":input_3D.orientation, "resolution":resolution, "matrix_size":matrix_size}
-            
-            gt_3D = []
+
+            input_image = nib.load(input_filename)
+            #input_image = check_orientation(input_image, self.orientation)
+            #input_image = check_resolution(input_image, self.resolution)
+
+            w, h = input_image.shape[0:2]
+            new_w, new_h = self.matrix_size
+            if w<new_w or h<new_h:
+                raise RuntimeError('Image smaller than required size : {}x{}, please provide images of equal or greater size.'.format(new_w, new_h))
+
+            w1 = (w-new_w)/2
+            w2 = new_w+w1
+            h1 = (h-new_h)/2
+            h2 = new_h+h1
+                        
             gt_class_names = sorted(gt_dict.keys())
-            for gt_class in gt_class_names:
-                gt_3D.append(msct_Image(gt_dict[gt_class]))
-                  
-            if not self.header:
-                self.header = input_header
-            #sanity check for consistent header
-            elif self.header != input_header :
-                print self.header
-                print input_header
-                raise RuntimeError('Inconsistent header in input files.')
-                
             if not self.class_names:
                 self.class_names = gt_class_names 
             #sanity check for consistent gt classes
             elif self.class_names != gt_class_names:
                 raise RuntimeError('Inconsistent classes in gt files.')
+
+            gt_nps = []
+            for gt_class in gt_class_names:
+                gt_image = nib.load(gt_dict[gt_class])
+                #gt_image = check_orientation(gt_image, self.orientation)
+                #gt_image = check_resolution(gt_image, self.resolution)               
+                gt_nps.append(gt_image.get_data().astype(self.data_type))                          
+
                 
-            for i in range(input_3D.dim[2]):
-                if self.slice_axis == 0:
-                    input_slice = input_3D.data[i,::,::]
-                    gt_slices = [gt.data[i,::,::] for gt in gt_3D]
-                elif self.slice_axis == 1:
-                    input_slice = input_3D.data[::,i,::]
-                    gt_slices = [gt.data[::,i,::] for gt in gt_3D]
+            for i in range(input_image.shape[2]):
+                input_slice = input_image.get_data()[w1:w2,h1:h2,...,i].astype(self.data_type)
+                if len(input_slice.shape)==2:
+                    input_slice = np.reshape(input_slice, (1,)+input_slice.shape)
                 else:
-                    input_slice = input_3D.data[::,::,i]
-                    gt_slices = [gt.data[::,::,i] for gt in gt_3D]
+                    input_slice = np.moveaxis(input_slice, 2, 0)
+                gt_slices = [gt[w1:w2,h1:h2,i] for gt in gt_nps]
+                
+                self.mean += np.mean(input_slice[0,:,:])/(input_image.shape[2]*len(self.filenames)) # compute mean of all the input slices (on 1st channel only, for input normalization in network)
 
                 #sanity check for no overlap in gt masks
                 if np.max(sum(gt_slices))>1:
                     raise RuntimeError('Ground truth masks overlapping.')
 
-                seg_item = [input_slice]
+                seg_item = {"input":input_slice, "gt":[]}
                 for gt_slice in gt_slices:
-                    if gt_slice.shape != input_slice.shape:
+                    if gt_slice.shape != input_slice.shape[-2:]:
                         print "input dimensions : {}".format(input_slice.shape)
                         print "gt dimensions : {}".format(gt_slice.shape)
                         raise RuntimeError('Input and ground truth with different dimensions.')
-                    seg_item.append(gt_slice)
-                self.handlers.append(np.array(seg_item))
-                
+                    seg_item["gt"].append(gt_slice)
+                seg_item["gt"] = np.array(seg_item["gt"])
+                self.handlers.append(seg_item)           
     
     def read_filenames(self, txt_path_file):
         for line in open(txt_path_file, 'r'):
@@ -119,7 +128,7 @@ class MRI2DSegDataset(Dataset):
                     raise RuntimeError('Error in filenames txt file parsing.')
                 for i in range(len(line)/2):
                     try:
-                        msct_Image(line[2*i+1])
+                        nib.load(line[2*i+1])
                     except Exception:
                         raise RuntimeError("Invalid path in filenames txt file.")
                     if(line[2*i]=="input"):
@@ -127,13 +136,44 @@ class MRI2DSegDataset(Dataset):
                     else:
                         fnames[1][line[2*i]]=line[2*i+1]
                 self.filenames.append((fnames[0], fnames[1]))
+    
+    def to_PIL(self, sample):
+        # turns a sample of numpy arrays to a sample of PIL images
+        sample_pil = {}
+        sample_pil['input'] = [Image.fromarray(sample['input'][i]) for i in range(sample['input'].shape[0])]
+        sample_pil['gt'] = [Image.fromarray(gt) for gt in sample['gt']]
+        return sample_pil
+
+    def to_tensor(self, sample):
+        # turns a sample of PIL images to a sample of torch tensors
+        np_inputs = [np.array(input, dtype=self.data_type) for input in sample['input']]
+        torch_input = torch.stack([torch.tensor(input, dtype=getattr(torch, self.data_type)) for input in np_inputs], dim=0)
+        np_gt = [np.array(gt, dtype=self.data_type) for gt in sample['gt']]
+        torch_gt = torch.stack([torch.tensor(gt, dtype=getattr(torch, self.data_type)) for gt in np_gt])
+        sample_torch = {}
+        sample_torch['input'] = torch_input
+        sample_torch['gt'] = torch_gt
+        return sample_torch
+    
+    def add_background_gt(self, gts):
+        # create the background mask as complementary to the other gt masks 
+        gt_size = gts.size()[1:]
+        bg_gt = torch.ones(gt_size, dtype=getattr(torch, self.data_type))
+        zeros = torch.zeros(gt_size, dtype=getattr(torch, self.data_type))
+        for i in range(gts.size()[0]):
+            bg_gt = torch.max(bg_gt - gts[i], zeros)
+        new_gts = torch.cat((torch.stack([bg_gt]), gts))
+        return new_gts
 
 
-def get_bg_gt(gts):
-    # create the background mask as complementary to the other gt masks 
-    gt_size = gts[0].size()
-    bg_gt = torch.ones([gt_size[0],1,gt_size[2], gt_size[3]])
-    zeros = torch.zeros([gt_size[0],1,gt_size[2], gt_size[3]])
-    for gt in gts:
-        bg_gt = torch.max(bg_gt - gt, zeros)
-    return bg_gt
+
+def make_masks_exclusive(gts):
+    # make sure gt masks are not overlapping
+    indexes = range(len(gts))
+    np.random.shuffle(indexes)
+    for i in range(len(indexes)):
+        for j in range(i):
+            gts[indexes[i]][gts[indexes[j]]>=gts[indexes[i]]]=0
+    return gts
+
+

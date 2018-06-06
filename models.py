@@ -37,14 +37,18 @@ class UpConv(nn.Module):
         return x
 
 class UNet(nn.Module):
-    def __init__(self, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
+    def __init__(self, nb_input_channels, orientation, resolution, matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
         super(UNet, self).__init__()
 
         self.mean = mean
         self.std = std
+        self.orientation = orientation
+        self.resolution = resolution
+        self.matrix_size = matrix_size
+        self.class_names = class_names
         
         #Downsampling path
-        self.conv1 = DownConv(1, 64, drop_rate, bn_momentum)
+        self.conv1 = DownConv(nb_input_channels, 64, drop_rate, bn_momentum)
         self.mp1 = nn.MaxPool2d(2)
 
         self.conv2 = DownConv(64, 128, drop_rate, bn_momentum)
@@ -65,6 +69,7 @@ class UNet(nn.Module):
 
     def forward(self, x):
         x0 = (x-self.mean)/self.std
+        print x0.size()
 
         x1 = self.conv1(x)
         x2 = self.mp1(x1)
