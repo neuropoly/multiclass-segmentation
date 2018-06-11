@@ -1,6 +1,6 @@
 # nih segmentaion
 
-#### <span style="color:red"> Still under development </span>
+<h4 style="color:red"> Still under development </h4>
 
 This repo contains tools to train segmentation networks using Pytorch.
 An example of use is visible in the **training.py** file. 
