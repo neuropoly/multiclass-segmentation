@@ -4,7 +4,7 @@ import sys
 sys.path.append(sct_dir)
 sys.path.append(sct_scripts)
 from resample.nipy_resample import resample_image
-from sct_image import set_orientatio
+from sct_image import set_orientation
 import numpy as np
 
 

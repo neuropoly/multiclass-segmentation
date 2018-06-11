@@ -33,7 +33,6 @@ import monitoring
 
 
 
-
 ## LOAD HYPERPARAMETERS FROM JSON FILE ##
 
 path_to_json = patient_directory+'/parameters.json'
@@ -152,7 +151,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
         optimizer.zero_grad()
         input = sample_batched['input'].to(device)
         output =  net(input)
-        #gts = [get_bg_gt(sample_batched['gt'])]+sample_batched['gt'] # make an array of ground truths (with the computed background gt mask)
         gts = sample_batched['gt']
         loss = loss_function(output, gts.to(device))
         loss.backward()
@@ -207,7 +205,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     gts_for_image = gts[0]
 
     monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "validation")
-
 
                 
 writer.export_scalars_to_json("./"+log_dir+"/all_scalars.json")

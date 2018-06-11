@@ -17,7 +17,7 @@ class MRI2DSegDataset(Dataset):
 
         class_1 and class_2 can be any string (with no space) that will be used as class names. 
         For multi-class segmentation, there is no need to provide the background mask, it will be computed as the complementary of all other masks. Each segmentation class ground truth mus be in different 1 channel file.
-        The inputs can be multichannel 2D images.
+        The inputs can be volumes of multichannel 2D images.
     
     :param txt_path_file: the path to a txt file containing the list of paths to input data files and gt masks.
     :param matrix_size: size of the slices (tuple of two integers).
@@ -41,21 +41,25 @@ class MRI2DSegDataset(Dataset):
         
         self._load_files()
 
-        for seg_item in self.handlers: # compute std of the whole dataset (for input normalization in network)
+        # compute std of the whole dataset (for input normalization in network)
+        for seg_item in self.handlers: 
             self.std += np.mean((seg_item['input']-self.mean)**2)/len(self.handlers)
         self.std = math.sqrt(self.std)
+
 
     def __len__(self):
         return len(self.handlers)
     
+
     def __getitem__(self, index):
         sample = self.handlers[index]
-        sample = self.to_PIL(sample) # transform to PIL images to apply transformations
+        sample = self.to_PIL(sample) # turn to PIL images to apply transformations
 
+        # apply transformations
         if self.transform:
             sample = self.transform(sample)
 
-        sample = self.to_tensor(sample) # transform to tensor to use in network
+        sample = self.to_tensor(sample) # turn to tensor to use in network
         
         if len(sample['gt'])>1:    # if it is a multiclass problem
             sample['gt'] = make_masks_exclusive(sample['gt']) # make sure gt masks are not overlapping due to transformations
@@ -63,44 +67,47 @@ class MRI2DSegDataset(Dataset):
             
         return sample
     
+
     def _load_files(self):
         for input_filename, gt_dict in self.filenames:
 
+            # load input
             input_image = nib.load(input_filename)
             #input_image = check_orientation(input_image, self.orientation)
             #input_image = check_resolution(input_image, self.resolution)
 
-            w, h = input_image.shape[0:2]
-            new_w, new_h = self.matrix_size
-            if w<new_w or h<new_h:
-                raise RuntimeError('Image smaller than required size : {}x{}, please provide images of equal or greater size.'.format(new_w, new_h))
-
-            w1 = (w-new_w)/2
-            w2 = new_w+w1
-            h1 = (h-new_h)/2
-            h2 = new_h+h1
-                        
+            # get class names
             gt_class_names = sorted(gt_dict.keys())
             if not self.class_names:
                 self.class_names = gt_class_names 
-            #sanity check for consistent gt classes
+            #sanity check for consistent classes
             elif self.class_names != gt_class_names:
                 raise RuntimeError('Inconsistent classes in gt files.')
 
+            # load gts
             gt_nps = []
             for gt_class in gt_class_names:
                 gt_image = nib.load(gt_dict[gt_class])
                 #gt_image = check_orientation(gt_image, self.orientation)
                 #gt_image = check_resolution(gt_image, self.resolution)               
-                gt_nps.append(gt_image.get_data().astype(self.data_type))                          
+                gt_nps.append(gt_image.get_data().astype(self.data_type))
 
+            # compute min and max width and height to crop the arrays to the wanted size
+            w, h = input_image.shape[0:2]
+            new_w, new_h = self.matrix_size
+            if w<new_w or h<new_h:
+                raise RuntimeError('Image smaller than required size : {}x{}, please provide images of equal or greater size.'.format(new_w, new_h))
+            w1 = (w-new_w)/2
+            w2 = new_w+w1
+            h1 = (h-new_h)/2
+            h2 = new_h+h1                          
                 
-            for i in range(input_image.shape[2]):
+            for i in range(input_image.shape[2]): # iterating over the z axis to get each 2D slice
                 input_slice = input_image.get_data()[w1:w2,h1:h2,...,i].astype(self.data_type)
                 if len(input_slice.shape)==2:
-                    input_slice = np.reshape(input_slice, (1,)+input_slice.shape)
+                    input_slice = np.reshape(input_slice, (1,)+input_slice.shape) # if there is only one channel in input, add the channel dimension as first dimension
                 else:
-                    input_slice = np.moveaxis(input_slice, 2, 0)
+                    input_slice = np.moveaxis(input_slice, 2, 0) # if there are multiple channel, move axis to have the channel dimension as first dimension
                 gt_slices = [gt[w1:w2,h1:h2,i] for gt in gt_nps]
                 
                 self.mean += np.mean(input_slice[0,:,:])/(input_image.shape[2]*len(self.filenames)) # compute mean of all the input slices (on 1st channel only, for input normalization in network)
@@ -109,16 +116,10 @@ class MRI2DSegDataset(Dataset):
                 if np.max(sum(gt_slices))>1:
                     raise RuntimeError('Ground truth masks overlapping.')
 
-                seg_item = {"input":input_slice, "gt":[]}
-                for gt_slice in gt_slices:
-                    if gt_slice.shape != input_slice.shape[-2:]:
-                        print "input dimensions : {}".format(input_slice.shape)
-                        print "gt dimensions : {}".format(gt_slice.shape)
-                        raise RuntimeError('Input and ground truth with different dimensions.')
-                    seg_item["gt"].append(gt_slice)
-                seg_item["gt"] = np.array(seg_item["gt"])
+                seg_item = {"input":input_slice, "gt":np.array(gt_slices)}
                 self.handlers.append(seg_item)           
     
+
     def read_filenames(self, txt_path_file):
         for line in open(txt_path_file, 'r'):
             if "input" in line:
@@ -137,12 +138,14 @@ class MRI2DSegDataset(Dataset):
                         fnames[1][line[2*i]]=line[2*i+1]
                 self.filenames.append((fnames[0], fnames[1]))
     
+
     def to_PIL(self, sample):
         # turns a sample of numpy arrays to a sample of PIL images
         sample_pil = {}
         sample_pil['input'] = [Image.fromarray(sample['input'][i]) for i in range(sample['input'].shape[0])]
         sample_pil['gt'] = [Image.fromarray(gt) for gt in sample['gt']]
         return sample_pil
+
 
     def to_tensor(self, sample):
         # turns a sample of PIL images to a sample of torch tensors
@@ -155,6 +158,7 @@ class MRI2DSegDataset(Dataset):
         sample_torch['gt'] = torch_gt
         return sample_torch
     
+
     def add_background_gt(self, gts):
         # create the background mask as complementary to the other gt masks 
         gt_size = gts.size()[1:]

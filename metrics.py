@@ -80,8 +80,16 @@ def dice_score(pred, gts):
     np_gts = [gts[:,i,:,:].numpy() for i in range(gts.size()[1])]
 
     for i in range(len(np_gts)):
-        intersection = 2*((np_pred==i)*np_gts[i]).sum()
-        union = (np_pred==i).sum()+np_gts[i].sum()
-        dice.append(intersection/union)
-
+        intersection = ((np_pred==i)*np_gts[i]).sum()
+        card_sum = (np_pred==i).sum()+np_gts[i].sum()
+        dice.append(2*intersection/card_sum)
     return dice
+
+
+def jaccard_score(pred, gts):
+    jaccard = []
+    for i in range(gts.size()[1]):
+        intersection = ((pred==i)*gts[:,i,:,:]).sum()
+        union = (pred==i).sum()+gts[:,i,:,:].sum()-intersection
+        jaccard.append(float(intersection)/union)
+    return jaccard

@@ -46,6 +46,9 @@ class UNet(nn.Module):
         self.resolution = resolution
         self.matrix_size = matrix_size
         self.class_names = class_names
+        nb_classes = 1
+        if len(class_names)>1:
+            nb_classes=len(class_names)+1
         
         #Downsampling path
         self.conv1 = DownConv(nb_input_channels, 64, drop_rate, bn_momentum)
@@ -65,7 +68,7 @@ class UNet(nn.Module):
         self.up2 = UpConv(384, 128, drop_rate, bn_momentum)
         self.up3 = UpConv(192, 64, drop_rate, bn_momentum)
 
-        self.conv9 = nn.Conv2d(64, 4, kernel_size=3, padding=1)
+        self.conv9 = nn.Conv2d(64, nb_classes, kernel_size=3, padding=1)
 
     def forward(self, x):
         x0 = (x-self.mean)/self.std
