@@ -21,4 +21,4 @@ All files used for training (and validation) must share the same orientation, re
 - The **monitoring** file contains functions to write metrics and images to the tensorboard dashboard.
 
 
-The notebooks folder contains jupyter notebooks that show hom to use the classes and functions. 
+The notebooks folder contains jupyter notebooks that show how to use the classes and functions. 
