@@ -16,18 +16,30 @@ if args.GPU:
 
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_number 
 
+lesion = True
+multi = False
+if lesion:
+    nb_i=1
+    name="_lesion"
+    if multi:
+        nb_i = 4
+        name="_multi"
+else:
+    nb_i=1
+    name=""
+
 import torch
 from dataset import *
 import transforms
 import json
 from torchvision import transforms as torch_transforms
 from tensorboardX import SummaryWriter
-#import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 from models import UNet
+from models import NoPoolASPP
 import losses
 import monitoring
 
@@ -64,8 +76,8 @@ centerCrop = transforms.CenterCrop2D(parameters["input"]["matrix_size"])
 composed = torch_transforms.Compose([randomVFlip,randomRotation,randomResizedCrop, elasticTransform])
 
 # creating datasets
-training_dataset = MRI2DSegDataset(patient_directory+"/filenames_training.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
-validation_dataset = MRI2DSegDataset(patient_directory+"/filenames_validation.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
+training_dataset = MRI2DSegDataset(patient_directory+"/filenames"+name+"_training.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
+validation_dataset = MRI2DSegDataset(patient_directory+"/filenames"+name+"_validation.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
 
 # creating data loaders
 training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True)
@@ -75,7 +87,9 @@ validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["tr
 
 ## CREATE NET ##
 
-net = UNet(nb_input_channels=1, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+#net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+
+net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
 # To use multiple GPUs :
 #if torch.cuda.device_count() > 1:
@@ -159,7 +173,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
     predictions = torch.argmax(output, 1, keepdim=True).to("cpu") # get predicted class for each pixel (on cpu to compute metrics)
 
-    
     # metrics
     monitoring.write_metrics(writer, predictions, gts, loss_sum, epoch, "training")
 
@@ -170,7 +183,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     gts_for_image = gts[0]
 
     monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
-
     
     if "write_param_histograms" in parameters["training"].keys() and parameters["training"]["write_param_histograms"]:
         # write net parameters histograms (make the training significantly slower)
@@ -190,7 +202,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
         loss_sum += loss.item()/len(validation_dataloader)
 
     predictions = torch.argmax(output, 1, keepdim=True).to("cpu")
-
 
     if loss_sum < best_loss:
         torch.save(net, "./"+log_dir+"/best_model.pt")

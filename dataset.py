@@ -103,7 +103,7 @@ class MRI2DSegDataset(Dataset):
             h2 = new_h+h1                          
                 
             for i in range(input_image.shape[2]): # iterating over the z axis to get each 2D slice
-                input_slice = input_image.get_data()[w1:w2,h1:h2,...,i].astype(self.data_type)
+                input_slice = input_image.get_data()[w1:w2,h1:h2,i,...].astype(self.data_type)
                 if len(input_slice.shape)==2:
                     input_slice = np.reshape(input_slice, (1,)+input_slice.shape) # if there is only one channel in input, add the channel dimension as first dimension
                 else:
