@@ -98,6 +98,68 @@ class UNet(nn.Module):
         
         return preds
 
+class SmallUNet(nn.Module):
+    def __init__(self, nb_input_channels, orientation, resolution, matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
+        super(SmallUNet, self).__init__()
+
+        self.mean = mean
+        self.std = std
+        self.orientation = orientation
+        self.resolution = resolution
+        self.matrix_size = matrix_size
+        self.class_names = class_names
+        nb_classes = 1
+        if len(class_names)>1:
+            nb_classes=len(class_names)+1
+        
+        #Downsampling path
+        self.conv1 = DownConv(nb_input_channels, 32, drop_rate, bn_momentum)
+        self.mp1 = nn.MaxPool2d(2)
+
+        self.conv2 = DownConv(32, 64, drop_rate, bn_momentum)
+        self.mp2 = nn.MaxPool2d(2)    
+
+        self.conv3 = DownConv(64, 128, drop_rate, bn_momentum)
+        self.mp3 = nn.MaxPool2d(2)          
+
+        # Bottom
+        self.conv4 = DownConv(128, 128, drop_rate, bn_momentum)
+
+        # Upsampling path
+        self.up1 = UpConv(256, 128, drop_rate, bn_momentum)
+        self.up2 = UpConv(192, 64, drop_rate, bn_momentum)
+        self.up3 = UpConv(96, 32, drop_rate, bn_momentum)
+
+        self.conv9 = nn.Conv2d(32, nb_classes, kernel_size=3, padding=1)
+
+    def forward(self, x):
+        x0 = (x-self.mean)/self.std
+
+        x1 = self.conv1(x)
+        x2 = self.mp1(x1)
+
+        x3 = self.conv2(x2)
+        x4 = self.mp2(x3)
+        
+        x5 = self.conv3(x4)
+        x6 = self.mp3(x5)    
+        
+        # Bottom
+        x7 = self.conv4(x6)
+        
+        # Up-sampling
+        x8 = self.up1(x7, x5)
+        x9 = self.up2(x8, x3)
+        x10 = self.up3(x9, x1)
+        
+        x11 = self.conv9(x10)
+        if len(self.class_names)>1:
+            preds = F.softmax(x11, 1)        
+        else:
+            preds = F.sigmoid(x11)
+        
+        return preds
+
 
 class NoPoolASPP(nn.Module):
     """

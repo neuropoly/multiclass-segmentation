@@ -2,31 +2,17 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("path", help="path to the patient directory (which should contain parameters.json, filenames_training.txt and filenames_validation.txt files)")
 parser.add_argument("--GPU", help="define the number of the GPU to use", type=int)
 args = parser.parse_args()
 
-patient_directory = args.path
-if patient_directory[-1]=="/":
-    patient_directory = patient_directory[:-1]
 
-gpu_number = '7' # number of the GPU to use
+gpu_number = '0' # number of the GPU to use
 if args.GPU:
     gpu_number = str(args.GPU)
 
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_number 
 
-lesion = True
-multi = False
-if lesion:
-    nb_i=1
-    name="_lesion"
-    if multi:
-        nb_i = 4
-        name="_multi"
-else:
-    nb_i=1
-    name=""
+
 
 import torch
 from dataset import *
@@ -42,14 +28,14 @@ from models import UNet
 from models import NoPoolASPP
 import losses
 import monitoring
+import paths
 
 
 
 ## LOAD HYPERPARAMETERS FROM JSON FILE ##
 
-path_to_json = patient_directory+'/parameters.json'
 
-parameters = json.load(open(path_to_json))
+parameters = json.load(open(paths.parameters))
 
 
 ## DEFINE DEVICE ##
@@ -76,8 +62,8 @@ centerCrop = transforms.CenterCrop2D(parameters["input"]["matrix_size"])
 composed = torch_transforms.Compose([randomVFlip,randomRotation,randomResizedCrop, elasticTransform])
 
 # creating datasets
-training_dataset = MRI2DSegDataset(patient_directory+"/filenames"+name+"_training.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
-validation_dataset = MRI2DSegDataset(patient_directory+"/filenames"+name+"_validation.txt", matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
+training_dataset = MRI2DSegDataset(paths.training_data, matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
+validation_dataset = MRI2DSegDataset(paths.validation_data, matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
 
 # creating data loaders
 training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True)
@@ -86,6 +72,8 @@ validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["tr
 
 
 ## CREATE NET ##
+
+nb_i = training_dataset[0]["input"].size()[0] # number of input channels 
 
 #net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
