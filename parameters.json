@@ -1,0 +1,36 @@
+{
+	"transforms":
+	{
+		"flip_rate": 0.5,
+		"scale_range": [0.5, 1],
+		"ratio_range" : [0.75, 1.25],
+		"max_angle" : 20,
+		"elastic_rate" : 0.3,
+		"alpha_range" : [8, 17],
+		"sigma_range" : [3, 4.5],
+		"channel_shift_range": 20
+	},
+	"training":
+	{
+		"learning_rate": 0.001,
+		"optimizer": "adam",
+		"loss_function": "dice",
+		"square_dice": true,
+		"batch_size": 11,
+		"nb_epochs": 10000,
+		"write_param_histograms": false,
+		"lr_schedule": "constant"
+	},
+	"net":
+	{
+		"drop_rate":0.3,
+		"bn_momentum": 0.1 
+	},
+	"input":
+	{
+		"data_type": "float32",
+		"matrix_size": [160,160],
+		"resolution": "0.15x0.15",
+		"orientation": "RAI"
+	}
+}
