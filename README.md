@@ -14,11 +14,14 @@ All files used for training (and validation) must share the same orientation, re
 
 - The **models.py** file contains classes that implement network architectures.
 
+- The **segment.py** file contains a function to segment a nifti file with a trained model.
+
 - The **losses.py** file contains calsses that implement different loss functions adapted to segmentation problems.
 
 - The **metrics.py** file contains functions that compute different metrics to monitor the results of the model. 
 
 - The **monitoring** file contains functions to write metrics and images to the tensorboard dashboard.
 
+The files use paths for the paramaters json file and the txt files containing the paths to the input and ground truth nifti files. These paths are defined in the **paths.py** file. Examples of such parameters json file and txt input files are provided as **parameters.json**, **training_data.txt** and **validation_data.txt**. 
 
 The notebooks folder contains jupyter notebooks that show how to use the classes and functions. 
