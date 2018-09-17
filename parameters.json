@@ -23,6 +23,7 @@
 	},
 	"net":
 	{
+		"model":"smallunet",
 		"drop_rate":0.3,
 		"bn_momentum": 0.1 
 	},
