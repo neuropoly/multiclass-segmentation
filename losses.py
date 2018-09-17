@@ -29,12 +29,13 @@ class CrossEntropy(object):
     """
 
     def __call__(self, output, gts):
-        
+
         target = gts[:,0,:,:].clone().zero_()
         for i in range(1, gts.size()[1]):
             target += i*gts[:,i,:,:]
+        #print "wsh", target.shape
         loss_function = torch.nn.CrossEntropyLoss()
-        target = target.reshape((target.shape[0], target.shape[2], target.shape[3]))
+        #target = target.reshape((target.shape[0], target.shape[2], target.shape[3]))
 
         return loss_function(output, target.long())
 

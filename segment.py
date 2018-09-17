@@ -45,6 +45,7 @@ def segment(network_path, input_path, output_path, net_name):
         input = np.moveaxis(input, 3,1)
     input = torch.Tensor(input)
 
+    #network.class_names = ["csf", "gm", "nawm"]
     output = network(input)
 
     if output.size()[1]==1:
@@ -76,6 +77,8 @@ def segment(network_path, input_path, output_path, net_name):
         file_name = output_path[:-7]+"_"+net_name+"_"+class_names[i]+"_seg.nii.gz"
         image.setFileName(file_name)
         image.save()
+
+
 
 
     

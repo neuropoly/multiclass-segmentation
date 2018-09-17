@@ -76,7 +76,7 @@ def accuracy_score(FP, FN, TP, TN):
 
 def dice_score(pred, gts):
     dice = []
-    np_pred = pred.numpy()
+    np_pred = pred.numpy()[:,0,:,:]
     np_gts = [gts[:,i,:,:].numpy() for i in range(gts.size()[1])]
 
     for i in range(len(np_gts)):

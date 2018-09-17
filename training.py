@@ -5,14 +5,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--GPU", help="define the number of the GPU to use", type=int)
 args = parser.parse_args()
 
-
 gpu_number = '0' # number of the GPU to use
 if args.GPU:
     gpu_number = str(args.GPU)
-
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_number 
-
-
 
 import torch
 from dataset import *
@@ -24,8 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
-from models import UNet
-from models import NoPoolASPP
+from models import *
 import losses
 import monitoring
 import paths
@@ -33,7 +28,6 @@ import paths
 
 
 ## LOAD HYPERPARAMETERS FROM JSON FILE ##
-
 
 parameters = json.load(open(paths.parameters))
 
@@ -45,7 +39,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print "working on {}".format(device)
 if torch.cuda.is_available():
     print "using GPU number {}".format(gpu_number)
-
 
 
 ## CREATE DATASETS ##
@@ -66,18 +59,28 @@ training_dataset = MRI2DSegDataset(paths.training_data, matrix_size=parameters["
 validation_dataset = MRI2DSegDataset(paths.validation_data, matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
 
 # creating data loaders
-training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True)
-validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=False)
+training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True, num_workers=1)
+validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=False, num_workers=1)
 
-
+parameters["input"]["training_data"]=paths.training_data
+parameters["input"]["validation_data"]=paths.validation_data
 
 ## CREATE NET ##
 
 nb_i = training_dataset[0]["input"].size()[0] # number of input channels 
 
-#net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+if parameters["net"]["model"] == "unet":
+    net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
-net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+elif parameters["net"]["model"] == "smallunet":
+    net = SmallUNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+
+elif parameters["net"]["model"] == "nopoolaspp":
+    net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"], drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+
+elif parameters["net"]["model"] == "segnet":
+    net = SegNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"], drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+
 
 # To use multiple GPUs :
 #if torch.cuda.device_count() > 1:
@@ -85,7 +88,6 @@ net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_name
 #  net = nn.DataParallel(net)
 
 net = net.to(device)
-
 
 
 ## DEFINE LOSS, OPTIMIZER AND LR SCHEDULE ##
@@ -130,7 +132,6 @@ else:
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 1)
 
 
-
 ## TRAINING ##
 
 writer = SummaryWriter()
@@ -173,7 +174,7 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
     
     if "write_param_histograms" in parameters["training"].keys() and parameters["training"]["write_param_histograms"]:
-        # write net parameters histograms (make the training significantly slower)
+        #  write net parameters histograms (make the training significantly slower)
         for name, param in net.named_parameters():
             writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch)
 

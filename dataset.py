@@ -96,6 +96,7 @@ class MRI2DSegDataset(Dataset):
             w, h = input_image.shape[0:2]
             new_w, new_h = self.matrix_size
             if w<new_w or h<new_h:
+                print w, h
                 raise RuntimeError('Image smaller than required size : {}x{}, please provide images of equal or greater size.'.format(new_w, new_h))
             w1 = (w-new_w)/2
             w2 = new_w+w1
@@ -114,7 +115,7 @@ class MRI2DSegDataset(Dataset):
 
                 #sanity check for no overlap in gt masks
                 if np.max(sum(gt_slices))>1:
-                    raise RuntimeError('Ground truth masks overlapping.')
+                    raise RuntimeError('Ground truth masks overlapping in '+input_filename+'.')
 
                 seg_item = {"input":input_slice, "gt":np.array(gt_slices)}
                 self.handlers.append(seg_item)           
@@ -131,7 +132,8 @@ class MRI2DSegDataset(Dataset):
                     try:
                         nib.load(line[2*i+1])
                     except Exception:
-                        raise RuntimeError("Invalid path in filenames txt file.")
+                        print line[2*i+1]
+                        raise RuntimeError("Invalid path in filenames txt file : "+line[2*i+1])
                     if(line[2*i]=="input"):
                         fnames[0]=line[2*i+1]
                     else:
