@@ -1,15 +1,8 @@
-sct_scripts = "/Users/frpau_local/sct_3.1.1/scripts"
-sct_dir = "/Users/frpau_local/sct_3.1.1/python/lib/python2.7/site-packages/spinalcordtoolbox"
-
 import os
 import sys
-sys.path.append(sct_dir)
-sys.path.append(sct_scripts)
 from msct_image import Image
 import numpy as np
 import torch
-from resample.nipy_resample import resample_image
-from sct_image import set_orientation
 
 
 
@@ -22,13 +15,13 @@ def segment(network_path, input_path, output_path, net_name):
     # orientation
     orientation = image.orientation
     if orientation != network.orientation:
-        image = set_orientation(image, network.orientation)
+        raise RuntimeError('The orientation of the input must be : '+network.orientation)
 
     # resolution
     res_w, res_h = list(np.around(image.dim[4:6], 2))
     res_str = str(res_w)+"x"+str(res_h)
     if res_str != network.resolution:
-        image = resample_image(image, network.resolution, 'mm', 'linear', verbose=0)
+        raise RuntimeError('The resolution of the input must be : '+network.resolution)
 
     # matrix size
     w, h = image.dim[0:2]
@@ -45,7 +38,6 @@ def segment(network_path, input_path, output_path, net_name):
         input = np.moveaxis(input, 3,1)
     input = torch.Tensor(input)
 
-    #network.class_names = ["csf", "gm", "nawm"]
     output = network(input)
 
     if output.size()[1]==1:
