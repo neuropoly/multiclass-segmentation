@@ -4,7 +4,7 @@
 
 # About
 
-This repo contains a pipeline to train networks for automatic multiclass segmentation of MRIs (Nifti files).
+This repo contains a pipeline to train networks for automatic multiclass segmentation of MRIs (NifTi files).
 It is intended to segment homogeneous databases from a small amount of manual examples. In a typical scenario, the user segments manually 5 to 10 percents of his images, trains the network on these examples, and then uses the network to segment the remaining images. 
 
 # Requirements
@@ -28,8 +28,8 @@ pip install -r requirements.txt
 
 # Data specifications
 
-The pipeline can handle only <b>Nifti</b> (https://nifti.nimh.nih.gov/) images. The images used must share the same resolution and orientation for the network to work properly.
-The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. Nifti files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).
+The pipeline can handle only <b>NifTi</b> (https://nifti.nimh.nih.gov/) images. The images used must share the same resolution and orientation for the network to work properly.
+The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. NifTi files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).
 
 
 # Description of the files
