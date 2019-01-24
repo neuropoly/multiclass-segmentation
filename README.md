@@ -31,6 +31,20 @@ pip install -r requirements.txt
 The pipeline can handle only <b>NifTi</b> (https://nifti.nimh.nih.gov/) images. The images used must share the same resolution and orientation for the network to work properly.
 The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. NifTi files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).
 
+# How to use
+
+0. Description of the process
+
+This pipeline's purpose is to train a neural network to segment NifTi files from examples.  
+Since the training requires example, the first step consists in producing manual segmentations of a fraction of the files. 5 to 10% of the files should be a good proportion, however this sample must be representative of the rest of the dataset. Datasets with great variability might require bigger fractions to be manually segmented.  
+The network is trained through a gradient back-propagation algorithm on the loss. The loss quantifies the difference between the predictions of the network and the manual segementations.  
+Once trained, the network can be used to automtically segment the entire dataset.
+
+![process schema](./media/process.png)
+
+1. Register the paths to your data
+
+
 
 # Description of the files
 
