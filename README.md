@@ -29,21 +29,45 @@ pip install -r requirements.txt
 # Data specifications
 
 The pipeline can handle only <b>NifTi</b> (https://nifti.nimh.nih.gov/) images. The images used must share the same resolution and orientation for the network to work properly.
-The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. NifTi files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).
+The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. NifTi files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).   
 
 # How to use
 
-0. Description of the process
+## 0. Description of the process
 
 This pipeline's purpose is to train a neural network to segment NifTi files from examples.  
-Since the training requires example, the first step consists in producing manual segmentations of a fraction of the files. 5 to 10% of the files should be a good proportion, however this sample must be representative of the rest of the dataset. Datasets with great variability might require bigger fractions to be manually segmented.  
+Since the training requires example, the first step consists in producing manual segmentations of a fraction of the files. 10 to 50% of the files should be a good proportion, however this sample must be representative of the rest of the dataset. Datasets with great variability might require bigger fractions to be manually segmented.  
 The network is trained through a gradient back-propagation algorithm on the loss. The loss quantifies the difference between the predictions of the network and the manual segementations.  
 Once trained, the network can be used to automtically segment the entire dataset.
 
-![process schema](./media/process.png)
+For training and inference, the volumes are sliced along the vertical axis and treated as collections of 2D images. Thus the image processing operations are 2D operations. 
 
-1. Register the paths to your data
+<img src="./media/process.png" alt="process schema" width="600"/>
 
+
+## 1. Register the paths to your data
+
+Rename the *training_data_template.txt* to *training_data.txt* and fill it using the following structure : 
+
+``` 
+input <path to file 1> <name of class 1> <path to GT of file 1 for class 1> <name of class 2> <path to GT of file 1 for class 2>
+input <path to file 2> <name of class 1> <path to GT of file 2 for class 1> <name of class 2> <path to GT of file 2 for class 2>
+```
+You can put as many classes as you wish.  
+Example :
+```
+input ./data/subject_1.nii.gz csf ./data/subject_1_manual_csf.nii.gz gm ./data/subject_1_manual_gm.nii.gz wm ./data/subject_1_manual_wm.nii.gz
+input ./data/subject_2.nii.gz csf ./data/subject_2_manual_csf.nii.gz gm ./data/subject_2_manual_gm.nii.gz wm ./data/subject_2_manual_wm.nii.gz
+input ./data/subject_3.nii.gz csf ./data/subject_3_manual_csf.nii.gz gm ./data/subject_3_manual_gm.nii.gz wm ./data/subject_3_manual_wm.nii.gz
+```
+
+Rename the *validation_data_template.txt* to *validation_data.txt* and fill it using the same structure.
+
+The files registered in the *training_data.txt* file will be used to train the network, and the ones in the *validation_data_template.txt* will only be used to compute the loss without modifying the network. This validation dataset is useful to detect overfitting. It is also recommanded to keep some manually segmented data for an evaluation dataset to use after the training for its evaluation. A good rule of thumb is to use 10/2/2 % of the whole dataset for training/validation/evaluation.
+
+## 2. Set the hyper-parameters
+
+Rename the *parameters_template.json* file to *parameters.json* and modify the values with the parameters you want. 
 
 
 # Description of the files
