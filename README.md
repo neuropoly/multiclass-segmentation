@@ -40,7 +40,7 @@ Since the training requires example, the first step consists in producing manual
 The network is trained through a gradient back-propagation algorithm on the loss. The loss quantifies the difference between the predictions of the network and the manual segementations.  
 Once trained, the network can be used to automtically segment the entire dataset.
 
-For training and inference, the volumes are sliced along the vertical axis and treated as collections of 2D images. Thus the image processing operations are 2D operations. 
+For training and inference, the volumes are sliced along the vertical axis and treated as collections of 2D images. Thus the image processing operations are 2D operations. Data auglentation is used on the training data. It consists in random modifications of the images and their corresponding GT to create more various examples. 
 
 <img src="./media/process.png" alt="process schema" width="600"/>
 
@@ -67,8 +67,44 @@ The files registered in the *training_data.txt* file will be used to train the n
 
 ## 2. Set the hyper-parameters
 
-Rename the *parameters_template.json* file to *parameters.json* and modify the values with the parameters you want. 
+Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want. 
 
+### Description of the hyper-parameters
+
+The hyper-parameters are divided in 4 categories. 
+
+#### 1. Transforms
+
+This category contains the parameters related to the data augmentation. The data augmentation operation is the combination of 5 transformations : rotation, elastic deformation, vertical symmetry, channel shift and scaling. 
+
+  - flip_rate (float) : probability to apply the vertical symmetry. Default value is 0.5.
+  - scale_range (tuple) : range of size of the origin size cropped for scaling. Default value is (0.08, 1.0).
+  - ratio_range (tuple) : range of aspect ratio of the origin aspect ratio cropped for scaling. Default value is (3./4., 4./3.).
+  - max_angle (float or tuple) : angle range of the rotation in degrees (if it is a single float a, the range will be [-a,a]).
+  - elastic_rate (float) : probability of applying the elastic deformation. Default value is 0.5.
+  - alpha_range (tuple) : range of alpha value for the elastic deformation.
+  - sigma_range (tuple) : range of sigma value for the elastic deformation.
+  - channel_shift_range (int) : percentage of the max value to use for the channel shift range (e.g. for a value a, the range of the shiffting value is [-a/100\*max(input),a/100\*max(input)]).
+  
+<img src="./media/data_augmentation.png" alt="data augmentation example" width="800"/>
+
+#### 2. Training
+
+This category contains the hyper-parameters used to train the network.
+
+  - learning_rate (float) : learning rate used by the optimizer
+  - optimizer (string) : optimizer used to update the network's weights. Possible values are "sgd" for simple gradient descent and "adam" for the Adam optimizer. Default value is "adam".
+  - loss_function (string) : loss function. Possible values are "crossentropy" for cross-entropy loss and "dice" for the dice loss. Default value is "crossentropy". 
+  - dice_smooth (float) : smoothing value for the dice loss (unused for cross-entropy loss). Default value is 0.001.
+  - batch_size (int) : number of images in each batch. 
+  - nb_epochs (int) : number of epochs to run.
+  - lr_schedule (string) : schedule of the learning rate. Possible values are "constant" for a constant learning rate, "cosine" for a cosine annealing schedule and "poly" for the poly schedule. Default value is "constant".
+  - poly_schedule_p (float) : power of the poly schedule (only used for poly learning rate schedule). Default value is 0.9.
+  
+  > Remark : the poly schedule is defined as follows  
+  > λ = (1-i/n)^p  
+  where λ is the learning rate, i the number of the current epoch, n the total number of epochs to run and p the power set with the parameter *poly_schedule_p*.
+  
 
 # Description of the files
 
