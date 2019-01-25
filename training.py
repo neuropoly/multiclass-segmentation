@@ -97,31 +97,25 @@ if parameters["training"]["optimizer"]=="sgd":
     if not "sgd_momentum" in parameters["training"]:
         parameters["training"]['sgd_momentum']=0.9
     optimizer = optim.SGD(net.parameters(), lr=parameters["training"]['learning_rate'], momentum=parameters["training"]['sgd_momentum'])
-elif parameters["training"]["optimizer"]=="adam":
+else:
     optimizer = optim.Adam(net.parameters(), lr=parameters["training"]['learning_rate'])
 
 # LOSS
 if parameters["training"]["loss_function"]=="dice":
 
-    if not "dice_square" in parameters["training"]:
-        parameters["training"]['dice_square']=True
-
-    if not "dice_smooth" in parameters["training"]:
+if not "dice_smooth" in parameters["training"]:
         parameters["training"]['dice_smooth']=0.001
 
-    loss_function = losses.Dice(square=parameters["training"]['dice_square'], smooth=parameters["training"]['dice_smooth'])
+    loss_function = losses.Dice(smooth=parameters["training"]['dice_smooth'])
     
-elif parameters["training"]["loss_function"]=="crossentropy":
-
+else:
     loss_function = losses.CrossEntropy()
 
 # LR SCHEDULE
 if parameters["training"]["lr_schedule"]=="cosine":
-
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, parameters["training"]["nb_epochs"])
 
 elif parameters["training"]["lr_schedule"]=="poly":
-
     if not "poly_schedule_p" in parameters["training"]:
         parameters["training"]['poly_schedule_p']=0.9
 
@@ -173,10 +167,6 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
 
     monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
     
-    if "write_param_histograms" in parameters["training"].keys() and parameters["training"]["write_param_histograms"]:
-        #  write net parameters histograms (make the training significantly slower)
-        for name, param in net.named_parameters():
-            writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch)
 
 
     ## Validation ##  

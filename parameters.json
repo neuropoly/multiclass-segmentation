@@ -15,10 +15,8 @@
 		"learning_rate": 0.001,
 		"optimizer": "adam",
 		"loss_function": "dice",
-		"square_dice": true,
 		"batch_size": 11,
 		"nb_epochs": 10000,
-		"write_param_histograms": false,
 		"lr_schedule": "constant"
 	},
 	"net":

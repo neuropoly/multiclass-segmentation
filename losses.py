@@ -9,16 +9,13 @@ class Dice(object):
         smooth (float): value to smooth the dice (and prevent division by 0)
         square (bool): to use the squares of the cardinals at denominator or not
     """
-    def __init__(self, smooth=0.001, square=False):
+    def __init__(self, smooth=0.001):
         self.smooth = smooth
-        self.power = 1
-        if square:
-            self.power=2
 
     def __call__(self, output, gts):
         num = -2*(output * gts).sum()
-        den1 = output.pow(self.power).sum()
-        den2 = gts.pow(self.power).sum()
+        den1 = output.pow(2).sum()
+        den2 = gts.pow(2).sum()
         loss = (num+self.smooth)/(den1+den2+self.smooth)
 
         return loss
