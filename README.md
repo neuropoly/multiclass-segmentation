@@ -40,7 +40,7 @@ Since the training requires example, the first step consists in producing manual
 The network is trained through a gradient back-propagation algorithm on the loss. The loss quantifies the difference between the predictions of the network and the manual segementations.  
 Once trained, the network can be used to automtically segment the entire dataset.
 
-For training and inference, the volumes are sliced along the vertical axis and treated as collections of 2D images. Thus the image processing operations are 2D operations. Data auglentation is used on the training data. It consists in random modifications of the images and their corresponding GT to create more various examples. 
+For training and inference, the volumes are sliced along the vertical axis and treated as collections of 2D images. Thus the image processing operations are 2D operations. Data augmentation is used on the training data. It consists in random modifications of the images and their corresponding GT to create more various examples. 
 
 <img src="./media/process.png" alt="process schema" width="600"/>
 
