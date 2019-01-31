@@ -72,7 +72,7 @@ Rename the *parameters_template.json* file to *parameters.json* and modify the v
 
 The hyper-parameters are divided in 4 categories. 
 
-##### 1. Transforms
+#### 1. Transforms
 
 This category contains the parameters related to the data augmentation. The data augmentation operation is the combination of 5 transformations : rotation, elastic deformation, vertical symmetry, channel shift and scaling. 
 
@@ -87,7 +87,7 @@ This category contains the parameters related to the data augmentation. The data
   
 <img src="./media/data_augmentation.png" alt="data augmentation example" width="800"/>
 
-##### 2. Training
+#### 2. Training
 
 This category contains the hyper-parameters used to train the network.
 
@@ -104,7 +104,7 @@ This category contains the hyper-parameters used to train the network.
   > λ = (1-i/n)^p  
   where λ is the learning rate, i the number of the current epoch, n the total number of epochs to run and p the power set with the parameter *poly_schedule_p*.
  
-##### 3. Net
+#### 3. Net
 
 This category contains the the hyper-parameters used to define and parameterize the network model.
 
@@ -112,7 +112,7 @@ This category contains the the hyper-parameters used to define and parameterize 
   - **drop_rate** (float) : drop rate.
   - **bn_momentum** (float) : batch normalization momentum.
 
-##### 4. Input
+#### 4. Input
 
 This category contains the data specifications used to check that all the loaded files share the same specifications, and hyper-parameters to format the data.
 
@@ -121,7 +121,7 @@ This category contains the data specifications used to check that all the loaded
   - **resolution** (string) : resolution in the axial planes, the value is used to check if it is consistant accross the files. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, the value is used to check if it is consistant accross the files, e.g. "RAI".
   
-#### 4. Activate tensorboard (optional)
+### 4. Activate tensorboard (optional)
 
 Tensorboard is a tool to visualize in a web browser the evolution of training and validation loss during the training.  
 In a terminal, type 
@@ -129,7 +129,7 @@ In a terminal, type
 tensorboard --logdir=<path to multiclass-segmentation folder>/runs
 ```
 
-#### 5. Launch training
+### 5. Launch training
 
 Execute the *training.py* script.  
 You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_id argument (int) to define the id of the GPU to use (default is 0). For example : 
@@ -139,7 +139,7 @@ python training.py --cuda --GPU_id 5
 
 When the training is over, two models are saved in ./runs/<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
   
-#### 6. Segment new data
+### 6. Segment new data
 
 To use your trained model on new data, 
 
