@@ -2,13 +2,15 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--GPU", help="define the number of the GPU to use", type=int)
+parser.add_argument("--cuda", help="use cuda", action="store_true")
+parser.add_argument("--GPU_id", help="define the id of the GPU to use", type=int)
 args = parser.parse_args()
 
-gpu_number = '0' # number of the GPU to use
-if args.GPU:
-    gpu_number = str(args.GPU)
-os.environ["CUDA_VISIBLE_DEVICES"] = gpu_number 
+gpu_id = '0' # number of the GPU to use
+if args.GPU_id:
+    gpu_id = str(args.GPU_id)
+os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id 
+
 
 import torch
 from dataset import *
@@ -34,11 +36,13 @@ parameters = json.load(open(paths.parameters))
 
 ## DEFINE DEVICE ##
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if (torch.cuda.is_available() and args.cuda) else "cpu")
+if (!torch.cuda.is_available() and args.cuda):
+    print "cuda is not available. "
 
 print "working on {}".format(device)
 if torch.cuda.is_available():
-    print "using GPU number {}".format(gpu_number)
+    print "using GPU number {}".format(gpu_id)
 
 
 ## CREATE DATASETS ##
@@ -69,10 +73,7 @@ parameters["input"]["validation_data"]=paths.validation_data
 
 nb_i = training_dataset[0]["input"].size()[0] # number of input channels 
 
-if parameters["net"]["model"] == "unet":
-    net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
-
-elif parameters["net"]["model"] == "smallunet":
+if parameters["net"]["model"] == "smallunet":
     net = SmallUNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
 elif parameters["net"]["model"] == "nopoolaspp":
@@ -80,6 +81,9 @@ elif parameters["net"]["model"] == "nopoolaspp":
 
 elif parameters["net"]["model"] == "segnet":
     net = SegNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"], drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+
+else:
+    net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
 
 
 # To use multiple GPUs :
