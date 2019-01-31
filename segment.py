@@ -3,14 +3,27 @@ import sys
 from msct_image import Image
 import numpy as np
 import torch
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", help="Path to the network model to use (.pt file).", required=True)
+parser.add_argument("-i", "--input", help="Path to the input NifTi file.", required=True)
+parser.add_argument("-o", "--output", help="Path for the output NifTi file, subscripts with class names will be added at the end.")
+parser.add_argument("--tag", help="Tag to add in the output file name.")
+args = parser.parse_args()
 
 
 
-def segment(network_path, input_path, output_path, net_name):
+
+def segment(network_path, input_path, output_path, tag=""):
     network = torch.load(network_path, map_location='cpu')
     network.eval()
 
     image = Image(input_path)
+
+    output_path_head, output_path_tail = os.path.split(output_path)
+
+######### TODO : Finish managing output_path ################
     
     # orientation
     orientation = image.orientation
@@ -66,12 +79,13 @@ def segment(network_path, input_path, output_path, net_name):
 
     for i in range(len(class_names)):
         image.data = pred==i+1
-        file_name = output_path[:-7]+"_"+net_name+"_"+class_names[i]+"_seg.nii.gz"
+        file_name = output_path_head+"_"+tag+"_"+class_names[i]+"_seg"+output_path_tail
         image.setFileName(file_name)
         image.save()
 
 
 
+segment(args.model, args.input, output_path, tag)
 
     
 
