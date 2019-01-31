@@ -1,17 +1,16 @@
 # Multiclass segmentaion pipeline
 
-<h4 style="color:red"> Still under development </h4>
 
-# About
+## About
 
 This repo contains a pipeline to train networks for automatic multiclass segmentation of MRIs (NifTi files).
 It is intended to segment homogeneous databases from a small amount of manual examples. In a typical scenario, the user segments manually 5 to 10 percents of his images, trains the network on these examples, and then uses the network to segment the remaining images. 
 
-# Requirements
+## Requirements
 
 The pipeline uses Python 2.7. A decent amount of RAM (at least 8GB) is necessary to load the data during training. Although the training can be done on the CPU, it is sensibly more efficient on a GPU (with cuda librairies installed).
 
-# Installation
+## Installation
 
 Clone the repo: 
 
@@ -26,14 +25,14 @@ The required librairies can be easily installed with pip:
 pip install -r requirements.txt
 ```
 
-# Data specifications
+## Data specifications
 
 The pipeline can handle only <b>NifTi</b> (https://nifti.nimh.nih.gov/) images. The images used must share the same resolution and orientation for the network to work properly.
 The examples of segmentations (ground truths, GT) to use for training must be binary masks, i.e. NifTi files with only 0 and 1 as voxel values. A GT file must correspond to a raw file and share its dimensions. If multiple classes are defined, a GT file must be generated for each class, and the GT masks must be exclusive (i.e. if a voxel has the value of 1 for one class, it must be 0 for the others).   
 
-# How to use
+## How to use
 
-## 0. Description of the process
+### 0. Description of the process
 
 This pipeline's purpose is to train a neural network to segment NifTi files from examples.  
 Since the training requires example, the first step consists in producing manual segmentations of a fraction of the files. 10 to 50% of the files should be a good proportion, however this sample must be representative of the rest of the dataset. Datasets with great variability might require bigger fractions to be manually segmented.  
@@ -45,7 +44,7 @@ For training and inference, the volumes are sliced along the vertical axis and t
 <img src="./media/process.png" alt="process schema" width="600"/>
 
 
-## 1. Register the paths to your data
+### 1. Register the paths to your data
 
 Rename the *training_data_template.txt* to *training_data.txt* and fill it using the following structure : 
 
@@ -65,15 +64,15 @@ Rename the *validation_data_template.txt* to *validation_data.txt* and fill it u
 
 The files registered in the *training_data.txt* file will be used to train the network, and the ones in the *validation_data_template.txt* will only be used to compute the loss without modifying the network. This validation dataset is useful to detect overfitting. It is also recommanded to keep some manually segmented data for an evaluation dataset to use after the training for its evaluation. A good rule of thumb is to use 10/2/2 % of the whole dataset for training/validation/evaluation.
 
-## 2. Set the hyper-parameters
+### 2. Set the hyper-parameters
 
 Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want. 
 
-### Description of the hyper-parameters
+#### Description of the hyper-parameters
 
 The hyper-parameters are divided in 4 categories. 
 
-#### 1. Transforms
+##### 1. Transforms
 
 This category contains the parameters related to the data augmentation. The data augmentation operation is the combination of 5 transformations : rotation, elastic deformation, vertical symmetry, channel shift and scaling. 
 
@@ -88,7 +87,7 @@ This category contains the parameters related to the data augmentation. The data
   
 <img src="./media/data_augmentation.png" alt="data augmentation example" width="800"/>
 
-#### 2. Training
+##### 2. Training
 
 This category contains the hyper-parameters used to train the network.
 
@@ -105,7 +104,7 @@ This category contains the hyper-parameters used to train the network.
   > λ = (1-i/n)^p  
   where λ is the learning rate, i the number of the current epoch, n the total number of epochs to run and p the power set with the parameter *poly_schedule_p*.
  
-#### 3. Net
+##### 3. Net
 
 This category contains the the hyper-parameters used to define and parameterize the network model.
 
@@ -113,7 +112,7 @@ This category contains the the hyper-parameters used to define and parameterize 
   - **drop_rate** (float) : drop rate.
   - **bn_momentum** (float) : batch normalization momentum.
 
-#### 4. Input
+##### 4. Input
 
 This category contains the data specifications used to check that all the loaded files share the same specifications, and hyper-parameters to format the data.
 
@@ -122,7 +121,7 @@ This category contains the data specifications used to check that all the loaded
   - **resolution** (string) : resolution in the axial planes, the value is used to check if it is consistant accross the files. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, the value is used to check if it is consistant accross the files, e.g. "RAI".
   
-### 4. Activate tensorboard (optional)
+#### 4. Activate tensorboard (optional)
 
 Tensorboard is a tool to visualize in a web browser the evolution of training and validation loss during the training.  
 In a terminal, type 
@@ -130,7 +129,7 @@ In a terminal, type
 tensorboard --logdir=<path to multiclass-segmentation folder>/runs
 ```
 
-### 5. Launch training
+#### 5. Launch training
 
 Execute the *training.py* script.  
 You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_id argument (int) to define the id of the GPU to use (default is 0). For example : 
@@ -140,11 +139,11 @@ python training.py --cuda --GPU_id 5
 
 When the training is over, two models are saved in ./runs/<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
   
-### 6. Segment new data
+#### 6. Segment new data
 
 To use your trained model on new data, 
 
-# Description of the files
+## Description of the files
 
 - The **training.py** file implements the training process, generating the datasets, the network and defining the loop used to train the network.
 
@@ -166,7 +165,7 @@ All files used for training (and validation) must share the same orientation, re
 
 The files use paths for the paramaters json file and the txt files containing the paths to the input and ground truth nifti files. These paths are defined in the **paths.py** file. Examples of such parameters json file and txt input files are provided as **parameters.json**, **training_data.txt** and **validation_data.txt**. 
 
-# Bibliography
+## Bibliography
 
 [1] Ronneberger O, Fischer P, Brox T. U-Net: Convolutional Networks for Biomedical Image Segmentation. [arXiv](https://arxiv.org/abs/1505.04597) \[cs.CV] 2015.  
 [2] Badrinarayanan V, Handa A, Cipolla R. SegNet: A Deep Convolutional Encoder-Decoder Architecture for Robust Semantic Pixel-Wise Labelling. [arXiv](https://arxiv.org/pdf/1511.00561.pdf) \[cs.CV] 2015.  
