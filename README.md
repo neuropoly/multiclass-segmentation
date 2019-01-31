@@ -117,7 +117,7 @@ This category contains the the hyper-parameters used to define and parameterize 
 
 This category contains the data specifications used to check that all the loaded files share the same specifications, and hyper-parameters to format the data.
 
-  - **data_type**** (string) : data type to use in the tensors, e.g. "float32".
+  - **data_type** (string) : data type to use in the tensors, e.g. "float32".
   - **matrix_size** (tuple) : size of the center-cropping to apply on every slice.
   - **resolution** (string) : resolution in the axial planes, the value is used to check if it is consistant accross the files. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, the value is used to check if it is consistant accross the files, e.g. "RAI".
@@ -133,7 +133,10 @@ tensorboard --logdir=<path to multiclass-segmentation folder>/runs
 ### 5. Launch training
 
 Execute the *training.py* script.  
-You can use the --cuda argument (bool) to use a GPU (default is False), and --GPU_id (int) to define the id of the GPU to use (default is 0).  
+You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_id argument (int) to define the id of the GPU to use (default is 0). For example : 
+```
+python training.py --cuda --GPU_id 5
+```
 
 When the training is over, two models are saved in ./runs/<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
   
@@ -162,3 +165,9 @@ All files used for training (and validation) must share the same orientation, re
 - The **monitoring** file contains functions to write metrics and images to the tensorboard dashboard.
 
 The files use paths for the paramaters json file and the txt files containing the paths to the input and ground truth nifti files. These paths are defined in the **paths.py** file. Examples of such parameters json file and txt input files are provided as **parameters.json**, **training_data.txt** and **validation_data.txt**. 
+
+# Bibliography
+
+[1] Ronneberger O, Fischer P, Brox T. U-Net: Convolutional Networks for Biomedical Image Segmentation. [arXiv](https://arxiv.org/abs/1505.04597) \[cs.CV] 2015.  
+[2] Badrinarayanan V, Handa A, Cipolla R. SegNet: A Deep Convolutional Encoder-Decoder Architecture for Robust Semantic Pixel-Wise Labelling. [arXiv](https://arxiv.org/pdf/1511.00561.pdf) \[cs.CV] 2015.  
+[3] Perone CS, Calabrese E, Cohen-Adad J. Spinal cord gray matter segmentation using deep dilated convolutions. Sci. Rep. 2018;8:5966. [arXiv](https://arxiv.org/pdf/1710.01269.pdf)
