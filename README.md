@@ -66,9 +66,32 @@ The files registered in the *training_data.txt* file will be used to train the n
 
 ### 2. Set the hyper-parameters
 
-Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want. 
+Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want.  
+See the section **Description of the hyper-parameters** below for a complete description of their functions. 
+  
+### 3. Activate tensorboard (optional)
 
-#### Description of the hyper-parameters
+Tensorboard is a tool to visualize in a web browser the evolution of training and validation loss during the training.  
+In a terminal, type 
+```
+tensorboard --logdir=<path to multiclass-segmentation folder>/runs
+```
+
+### 4. Launch training
+
+Execute the *training.py* script.  
+You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_id argument (int) to define the id of the GPU to use (default is 0). For example : 
+```
+python training.py --cuda --GPU_id 5
+```
+
+When the training is over, two models are saved in ./runs/<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
+  
+### 5. Segment new data
+
+To use your trained model on new data, execute the *
+
+## Description of the hyper-parameters
 
 The hyper-parameters are divided in 4 categories. 
 
@@ -120,28 +143,6 @@ This category contains the data specifications used to check that all the loaded
   - **matrix_size** (tuple) : size of the center-cropping to apply on every slice.
   - **resolution** (string) : resolution in the axial planes, the value is used to check if it is consistant accross the files. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, the value is used to check if it is consistant accross the files, e.g. "RAI".
-  
-### 4. Activate tensorboard (optional)
-
-Tensorboard is a tool to visualize in a web browser the evolution of training and validation loss during the training.  
-In a terminal, type 
-```
-tensorboard --logdir=<path to multiclass-segmentation folder>/runs
-```
-
-### 5. Launch training
-
-Execute the *training.py* script.  
-You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_id argument (int) to define the id of the GPU to use (default is 0). For example : 
-```
-python training.py --cuda --GPU_id 5
-```
-
-When the training is over, two models are saved in ./runs/<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
-  
-### 6. Segment new data
-
-To use your trained model on new data, 
 
 ## Description of the files
 
