@@ -3,7 +3,7 @@
 
 ## About
 
-This repo contains a pipeline to train networks for automatic multiclass segmentation of MRIs (NifTi files).
+This repo contains a pipeline to train networks for **automatic multiclass segmentation of MRIs** (NifTi files).
 It is intended to segment homogeneous databases from a small amount of manual examples. In a typical scenario, the user segments manually 5 to 10 percents of his images, trains the network on these examples, and then uses the network to segment the remaining images. 
 
 ## Requirements
@@ -67,7 +67,11 @@ The files registered in the *training_data.txt* file will be used to train the n
 ### 2. Set the hyper-parameters
 
 Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want.  
-See the section **Description of the hyper-parameters** below for a complete description of their functions. 
+See the section **Description of the hyper-parameters** below for a complete description of their functions.  
+The values of the parameters are saved in the model file, you can check the parameters of a model with the *show_param.py* script with the --model (-m) argument giving the path to the model: 
+```
+python show_param.py -m ./models/model.pt
+```
   
 ### 3. Activate tensorboard (optional)
 
@@ -89,7 +93,17 @@ When the training is over, two models are saved in ./runs/<timestamp>_<machine_n
   
 ### 5. Segment new data
 
-To use your trained model on new data, execute the *
+To use your trained model on new data, execute the *segment.py* script with the following arguments :
+- --model (-m) : path to the trained model to use
+- --input (-i) : path to the file to segment
+- --output (-o) : path to write the files, "_<class name>_seg" suffixes will be added to the file name. This argument is optional, if not provided, the input path will be used.
+- --tag (-t) : a tag to add to the output files, optional.  
+
+Example : 
+```
+python segment.py -m ./models/model.pt -i ./inputs/file.nii.gz -o ./ouptuts/file.nii.gz -t test
+```
+If the model was trained to segment two classes named gm and wm, two files will be saved : ./ouptuts/file_test_gm_seg.nii.gz and ./ouptuts/file_test_wm_seg.nii.gz.
 
 ## Description of the hyper-parameters
 
@@ -141,30 +155,10 @@ This category contains the data specifications used to check that all the loaded
 
   - **data_type** (string) : data type to use in the tensors, e.g. "float32".
   - **matrix_size** (tuple) : size of the center-cropping to apply on every slice.
-  - **resolution** (string) : resolution in the axial planes, the value is used to check if it is consistant accross the files. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
-  - **orientation** (string) : orientation of the files, the value is used to check if it is consistant accross the files, e.g. "RAI".
+  - **resolution** (string) : resolution in the axial planes. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
+  - **orientation** (string) : orientation of the files, e.g. "RAI".
 
-## Description of the files
-
-- The **training.py** file implements the training process, generating the datasets, the network and defining the loop used to train the network.
-
-- The **dataset.py** file contains classes used to create datasets that inherit the Pytorch dataset class and thus can be used to make dataloader objects. 
-They are initialized with txt files containing the paths to the nifti files for the inputs and the ground truths. The data is stored as numpy arrays but returned as torch tensors. They can be provided with transformations for data augmentation. 
-All files used for training (and validation) must share the same orientation, resolution and pixel/voxel sizes.
-
-- The **transfroms.py** file contains classes used to create transformations that can be provided to a dataset for data augmentation. The transformations are functions that take as argument and return PIL images. 
-
-- The **models.py** file contains classes that implement network architectures.
-
-- The **segment.py** file contains a function to segment a nifti file with a trained model.
-
-- The **losses.py** file contains calsses that implement different loss functions adapted to segmentation problems.
-
-- The **metrics.py** file contains functions that compute different metrics to monitor the results of the model. 
-
-- The **monitoring** file contains functions to write metrics and images to the tensorboard dashboard.
-
-The files use paths for the paramaters json file and the txt files containing the paths to the input and ground truth nifti files. These paths are defined in the **paths.py** file. Examples of such parameters json file and txt input files are provided as **parameters.json**, **training_data.txt** and **validation_data.txt**. 
+ > Remark : the **resolution** and **orientation** parameters are not used during training, their purpose is to store the resolution and orientation of the files used during training. Trying during inference to segment files that have different orientation or resolution won't produce satisfying results, thus it is good to be able to retrieve the nominal orientation and resolution of a trained model with the *show_param.py* script.
 
 ## Bibliography
 
