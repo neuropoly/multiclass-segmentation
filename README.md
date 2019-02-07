@@ -68,10 +68,7 @@ The files registered in the *training_data.txt* file will be used to train the n
 
 Rename the *parameters_template.json* file to *parameters.json* and modify the values with the hyper-parameters you want.  
 See the section **Description of the hyper-parameters** below for a complete description of their functions.  
-The values of the parameters are saved in the model file, you can check the parameters of a model with the *show_param.py* script with the --model (-m) argument giving the path to the model: 
-```
-python show_param.py -m ./models/model.pt
-```
+A copy of the *parameters.json* file is added to the folder of the run where the model is saved. 
   
 ### 3. Activate tensorboard (optional)
 
@@ -101,9 +98,14 @@ To use your trained model on new data, execute the *segment.py* script with the 
 
 Example : 
 ```
-python segment.py -m ./models/model.pt -i ./inputs/file.nii.gz -o ./ouptuts/file.nii.gz -t test
+python segment.py -m ./runs/timestamp_machine/model.pt -i ./inputs/file.nii.gz -o ./ouptuts/file.nii.gz -t test
 ```
 If the model was trained to segment two classes named gm and wm, two files will be saved : ./ouptuts/file_test_gm_seg.nii.gz and ./ouptuts/file_test_wm_seg.nii.gz.
+
+> Remark : the input files must share the same resolution and orientation as the ones used in training. To check which are these resolution and orientation, you can either check the *parameters.json* file copied in the directory where the model was saved, or use the *show_res_ori.py* script with the --model (-m) argument providing the path to the model, e.g. :
+```
+python show_res_ori.py -m ./runs/timestamp_machine/model.pt
+```
 
 ## Description of the hyper-parameters
 
@@ -158,7 +160,8 @@ This category contains the data specifications used to check that all the loaded
   - **resolution** (string) : resolution in the axial planes. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, e.g. "RAI".
 
- > Remark : the **resolution** and **orientation** parameters are not used during training, their purpose is to store the resolution and orientation of the files used during training. Trying during inference to segment files that have different orientation or resolution won't produce satisfying results, thus it is good to be able to retrieve the nominal orientation and resolution of a trained model with the *show_param.py* script.
+ > Remark : the **resolution** and **orientation** parameters are not used during training, their purpose is only to store the resolution and orientation of the files used during training. 
+
 
 ## Bibliography
 
