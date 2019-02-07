@@ -2,13 +2,13 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--cuda", help="use cuda", action="store_true")
-parser.add_argument("--GPU_id", help="define the id of the GPU to use", type=int)
+parser.add_argument("-c", "--cuda", help="use cuda", action="store_true")
+parser.add_argument("-g", "--GPU_id", help="define the id of the GPU to use", type=str)
 args = parser.parse_args()
 
 gpu_id = '0' # number of the GPU to use
 if args.GPU_id:
-    gpu_id = str(args.GPU_id)
+    gpu_id = args.GPU_id
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id 
 
 
@@ -37,10 +37,10 @@ parameters = json.load(open(paths.parameters))
 ## DEFINE DEVICE ##
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and args.cuda) else "cpu")
-if (!torch.cuda.is_available() and args.cuda):
+if (not torch.cuda.is_available() and args.cuda):
     print "cuda is not available. "
 
-print "working on {}".format(device)
+print "Working on {}.".format(device)
 if torch.cuda.is_available():
     print "using GPU number {}".format(gpu_id)
 
@@ -107,7 +107,7 @@ else:
 # LOSS
 if parameters["training"]["loss_function"]=="dice":
 
-if not "dice_smooth" in parameters["training"]:
+    if (not "dice_smooth" in parameters["training"]):
         parameters["training"]['dice_smooth']=0.001
 
     loss_function = losses.Dice(smooth=parameters["training"]['dice_smooth'])
@@ -139,6 +139,8 @@ log_dir = writer.file_writer.get_logdir() # get the name of the directory of the
 
 best_loss = float("inf")
 batch_length = len(training_dataloader)
+
+print("Training network...")
 
 for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     
@@ -206,4 +208,4 @@ writer.close()
 
 torch.save(net, "./"+log_dir+"/final_model.pt")
 
-print "training complete, model saved at ./"+log_dir+"/final_model.pt"
+print "Training complete, model saved at ./"+log_dir+"/final_model.pt"

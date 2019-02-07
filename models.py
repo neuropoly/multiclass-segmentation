@@ -31,7 +31,9 @@ class UpConv(nn.Module):
         self.downconv = DownConv(in_feat, out_feat, drop_rate, bn_momentum)
     
     def forward(self, x, y):
-        x = self.up1(x)
+        with warnings.catch_warnings(): # ignore the depreciation warning related to nn.Upsample
+            warnings.simplefilter("ignore")
+            x = self.up1(x)
         x = torch.cat([x, y], dim=1)
         x = self.downconv(x)
         return x
