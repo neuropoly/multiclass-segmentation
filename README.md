@@ -125,7 +125,7 @@ This category contains the hyper-parameters used to train the network.
   
   > Remark : the poly schedule is defined as follows  
   > λ = (1-i/n)^p  
-  where λ is the learning rate, i the number of the current epoch, n the total number of epochs to run and p the power set with the parameter *poly_schedule_p*.
+  where λ is the learning rate, i the number of the current epoch, n the total number of epochs to run and p the parameter *poly_schedule_p*.
  
 #### 3. Net
 
