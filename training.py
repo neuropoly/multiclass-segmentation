@@ -201,11 +201,10 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     gts_for_image = gts[0]
 
     monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "validation")
-
                 
-writer.export_scalars_to_json("./"+log_dir+"/all_scalars.json")
 writer.close()
 
+os.system("cp "+paths.parameters+" "+log_dir+"/parameters.json")
 torch.save(net, "./"+log_dir+"/final_model.pt")
 
 print "Training complete, model saved at ./"+log_dir+"/final_model.pt"
