@@ -75,7 +75,7 @@ A copy of the *parameters.json* file is added to the folder of the run where the
 Tensorboard is a tool to visualize in a web browser the evolution of training and validation loss during the training.  
 In a terminal, type 
 ```
-tensorboard --logdir=<path to multiclass-segmentation folder>/runs
+tensorboard --logdir <path to multiclass-segmentation folder>/runs
 ```
 
 ### 4. Launch training
