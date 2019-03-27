@@ -1,0 +1,6 @@
+.*
+*.pyc
+runs/*
+training_data.txt
+validation_data.txt
+parameters.json
