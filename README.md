@@ -10,6 +10,7 @@ It is intended to segment homogeneous databases from a small amount of manual ex
 
 The pipeline uses Python 2.7. A decent amount of RAM (at least 8GB) is necessary to load the data during training. Although the training can be done on the CPU, it is sensibly more efficient on a GPU (with cuda librairies installed).
 
+
 ## Installation
 
 Clone the repo: 
@@ -24,6 +25,9 @@ The required librairies can be easily installed with pip:
 ``` bash
 pip install -r requirements.txt
 ```
+
+  > Note: To use tensorboard you must also install tensorflow with 
+  > ``` pip install tensorflow```
 
 ## Data specifications
 
