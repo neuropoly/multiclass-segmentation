@@ -51,7 +51,7 @@ def write_images(writer, input, output, predictions, gts, epoch, tag):
     for i in range(gts.size()[0]):
         output_image = vutils.make_grid(output[i,:,:], normalize=True)
         writer.add_image('Output class '+str(i)+' '+tag, output_image, epoch)
-        pred_image = vutils.make_grid(predictions==i, normalize=False)
+        pred_image = vutils.make_grid(255*(predictions==i), normalize=False)
         writer.add_image('Prediction class '+str(i)+' '+tag, pred_image, epoch)
         gt_image = vutils.make_grid(gts[i,:,:], normalize=True)
         writer.add_image('GT class '+str(i)+' '+tag, gt_image, epoch)
