@@ -102,14 +102,14 @@ To use your trained model on new data, execute the *segment.py* script with the 
 
 Example : 
 ```
-python segment.py -m ./runs/timestamp_machine/model.pt -i ./inputs/file.nii.gz -o ./outputs/file.nii.gz -t test
+python segment.py -m ./runs/<timestamp>_<machine_name>/model.pt -i ./inputs/file.nii.gz -o ./outputs/file.nii.gz -t test
 ```
 If the model was trained to segment two classes named gm and wm, two files will be saved :  
 ./outputs/file_test_gm_seg.nii.gz and ./outputs/file_test_wm_seg.nii.gz.
 
 > Remark : the input files must share the same resolution and orientation as the ones used in training. To check which are these resolution and orientation, you can either check the *parameters.json* file copied in the directory where the model was saved, or use the *show_res_ori.py* script with the --model (-m) argument providing the path to the model, e.g. :
 ```
-python show_res_ori.py -m ./runs/timestamp_machine/model.pt
+python show_res_ori.py -m ./runs/<timestamp>_<machine_name>/model.pt
 ```
 
 ## Description of the hyper-parameters
