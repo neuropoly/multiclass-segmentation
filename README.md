@@ -90,7 +90,7 @@ You can use the --cuda option to use cuda (thus running on GPU), and the --GPU_i
 python training.py --cuda --GPU_id 5
 ```
 
-When the training is over, two models are saved in ./runs/\<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the training dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
+When the training is over, two models are saved in ./runs/\<timestamp>_<machine_name> folder. One is *best_model.pt* and corresponds to the weights giving the smallest loss on the validation dataset, the other is *final_model.pt* and corresponds to the weights at the last epoch. 
   
 ### 5. Segment new data
 
