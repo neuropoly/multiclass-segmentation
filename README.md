@@ -66,7 +66,7 @@ input ./data/subject_3.nii.gz csf ./data/subject_3_manual_csf.nii.gz gm ./data/s
 
 Rename the *validation_data_template.txt* to *validation_data.txt* and fill it using the same structure.
 
-The files registered in the *training_data.txt* file will be used to train the network, and the ones in the *validation_data_template.txt* will only be used to compute the loss without modifying the network. This validation dataset is useful to detect overfitting. It is also recommanded to keep some manually segmented data for an evaluation dataset to use after the training for its evaluation. A good rule of thumb is to use 10/2/2 % of the whole dataset for training/validation/evaluation.
+The files registered in the *training_data.txt* file will be used to train the network, and the ones in the *validation_data_template.txt* will only be used to compute the loss without modifying the network. This validation dataset is useful to detect overfitting. It is also recommanded to keep some manually segmented data for an evaluation dataset to use after the training for its evaluation. A good rule of thumb is to manually segment 10 % of your dataset and use 70/15/15 % of these manually segmented images for training/validation/evaluation.
 
 ### 2. Set the hyper-parameters
 
