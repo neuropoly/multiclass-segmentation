@@ -197,7 +197,7 @@ If you find this repository useful in your research, please cite the following p
 }
 ```
 
-## Bibliography
+## References
 
 [1] Ronneberger O, Fischer P, Brox T. U-Net: Convolutional Networks for Biomedical Image Segmentation. [arXiv](https://arxiv.org/abs/1505.04597) \[cs.CV] 2015.  
 [2] Badrinarayanan V, Handa A, Cipolla R. SegNet: A Deep Convolutional Encoder-Decoder Architecture for Robust Semantic Pixel-Wise Labelling. [arXiv](https://arxiv.org/pdf/1511.00561.pdf) \[cs.CV] 2015.  
