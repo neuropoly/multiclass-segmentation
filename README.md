@@ -167,6 +167,35 @@ This category contains the data specifications used to check that all the loaded
 
  > Remark : the **resolution** and **orientation** parameters are not used during training, their purpose is only to store the resolution and orientation of the files used during training. 
 
+## Citation
+
+If you find this repository useful in your research, please cite the following paper:
+
+```
+@ARTICLE{Paugam2019-mf,
+  title    = "Open-source pipeline for multi-class segmentation of the spinal
+              cord with deep learning",
+  author   = "Paugam, Fran{\c c}ois and Lefeuvre, Jennifer and Perone,
+              Christian S and Gros, Charley and Reich, Daniel S and Sati, Pascal
+              and Cohen-Adad, Julien",
+  abstract = "This paper presents an open-source pipeline to train neural
+              networks to segment structures of interest from MRI data. The
+              pipeline is tailored towards homogeneous datasets and requires
+              relatively low amounts of manual segmentations (few dozen, or
+              less depending on the homogeneity of the dataset). Two use-case
+              scenarios for segmenting the spinal cord white and grey matter
+              are presented: one in marmosets with variable numbers of lesions,
+              and the other in the publicly available human grey matter
+              segmentation challenge [1]. The pipeline is
+              freely available at:
+              https://github.com/neuropoly/multiclass-segmentation.",
+  journal  = "Magn. Reson. Imaging",
+  month    =  apr,
+  year     =  2019,
+  keywords = "MRI; segmentation; deep learning; u-net; cnn; spinal cord;
+              marmoset"
+}
+```
 
 ## Bibliography
 
