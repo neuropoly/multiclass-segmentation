@@ -98,7 +98,7 @@ To use your trained model on new data, execute the *segment.py* script with the 
 - **--model** (-m) : path to the trained model to use
 - **--input** (-i) : path to the file to segment
 - **--output** (-o) : path to write the files, "_<class name>_seg" suffixes will be added to the file name. This argument is optional, if not provided, the input path will be used.
-- **--tag** (-t) : a tag to add to the output files, optional.  
+- **--tag** (-t) : a tag to add to the output files' names, optional.  
 
 Example : 
 ```
