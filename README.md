@@ -1,4 +1,4 @@
-# Multiclass segmentaion pipeline
+# Multiclass segmentation pipeline
 
 
 ## About
