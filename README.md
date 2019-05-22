@@ -161,7 +161,7 @@ This category contains the the hyper-parameters used to define and parameterize 
 This category contains the data specifications used to check that all the loaded files share the same specifications, and hyper-parameters to format the data.
 
   - **data_type** (string) : data type to use in the tensors, e.g. "float32".
-  - **matrix_size** (tuple) : size of the center-cropping to apply on every slice.
+  - **matrix_size** (tuple) : size of the center-cropping to apply on every slice. For the models with pooling (SmallUNet and UNet) the sizes should be multiple of 2^p where p is the number of pooling operations (resp. 3 and 4). 
   - **resolution** (string) : resolution in the axial planes. It should be in the following format : "axb" where *a* is the resolution in the left/right axis and *b* in the anterior/posterior axis, e.g. "0.15x0.15".
   - **orientation** (string) : orientation of the files, e.g. "RAI".
 
