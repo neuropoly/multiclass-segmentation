@@ -20,7 +20,7 @@ class MRI2DSegDataset(Dataset):
         The inputs can be volumes of multichannel 2D images.
 
     :param txt_path_file: the path to a txt file containing the list of paths to input data files and gt masks.
-    :param matrix_size: size of the slices (tuple of two integers).
+    :param matrix_size: size of the slices (tuple of two integers). If the model contains p operations of pooling, the sizes should be multiples of 2^p.
     :param orientation: string describing the orientation to use, e.g. "RAI".
     :param resolution: string describing the resolution to use, e.g. "0.15x0.15".
     :param data_type: data type to use for the tensors, e.g. "float32".
