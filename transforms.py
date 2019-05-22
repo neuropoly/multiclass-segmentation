@@ -23,7 +23,7 @@ class ElasticTransform(object):
         self.sigma_range = sigma_range
         self.p = p
         self.dtype = dtype
-    
+
     @staticmethod
     def get_params(alpha_range, sigma_range):
         alpha = np.random.uniform(alpha_range[0], alpha_range[1])
@@ -43,11 +43,11 @@ class ElasticTransform(object):
     def __call__(self, sample):
         if np.random.random() < self.p:
             param_alpha, param_sigma = self.get_params(self.alpha_range, self.sigma_range)
-            
+
             input_data = [np.array(input, dtype=self.dtype) for input in sample['input']]
             input_data = [self.elastic_transform(input, param_alpha, param_sigma) for input in input_data]
             input_data = [PIL_Image.fromarray(input) for input in input_data]
-            
+
             gt_data = sample['gt']
             for i in range(len(gt_data)):
                 gt = np.array(gt_data[i], dtype=self.dtype)
@@ -56,10 +56,10 @@ class ElasticTransform(object):
                 gt[gt < 0.5] = 0.0
                 gt_data[i] = PIL_Image.fromarray(gt)
 
-                
+
             sample['input'] = input_data
             sample['gt'] = gt_data
-        
+
         return sample
 
 
@@ -90,21 +90,23 @@ class RandomRotation(object):
     def __call__(self, sample):
         angle = self.get_params(self.degrees)
         rdict = {}
-        
+
         input_data = sample['input']
         input_data = [F.rotate(input, angle, self.resample, self.expand, self.center) for input in input_data]
         rdict['input'] = input_data
-        
+
         gt_data = sample['gt']
         gt_data = [F.rotate(gt, angle, self.resample, self.expand, self.center) for gt in gt_data]
         rdict['gt'] = gt_data
-           
+
         return rdict
-    
+
 
 class RandomResizedCrop(object):
     """Crop the given PIL Image to random size and aspect ratio.
-    A crop of random size (default: of 0.08 to 1.0) of the original size and a random aspect ratio (default: of 3/4 to 4/3) of the original aspect ratio is made. This crop is finally resized to given size.
+    A crop of random size (default: of 0.08 to 1.0) of the original size and a
+    random aspect ratio (default: of 3/4 to 4/3) of the original aspect ratio is made.
+    This crop is finally resized to given size.
     Args:
         size: expected output size of each edge
         scale: range of size of the origin size cropped
@@ -112,7 +114,8 @@ class RandomResizedCrop(object):
         interpolation: Default: PIL.Image.BILINEAR
     """
 
-    def __init__(self, size, dtype, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.), interpolation=PIL_Image.BILINEAR):
+    def __init__(self, size, dtype, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.),
+                 interpolation=PIL_Image.BILINEAR):
         self.size = (size[0], size[1])
         self.interpolation = interpolation
         self.scale = scale
@@ -155,9 +158,9 @@ class RandomResizedCrop(object):
     def __call__(self, sample):
         i, j, h, w = self.get_params(sample['input'][0], self.scale, self.ratio)
         rdict = {}
-        
+
         input_data = [F.resized_crop(input, i, j, h, w, self.size, self.interpolation) for input in sample['input']]
-        
+
         gt_data = [F.resized_crop(gt, i, j, h, w, self.size, self.interpolation) for gt in sample['gt']]
         for i in range(len(gt_data)):
             gt = np.array(gt_data[i], dtype=self.dtype)
@@ -167,10 +170,10 @@ class RandomResizedCrop(object):
 
         rdict['input'] = input_data
         rdict['gt'] = gt_data
-        
+
         return rdict
-    
-    
+
+
 class RandomVerticalFlip(object):
     """Vertically flip the given PIL Image randomly with a given probability.
     Args:
@@ -186,11 +189,13 @@ class RandomVerticalFlip(object):
             sample['gt'] = [F.vflip(gt) for gt in sample['gt']]
         return sample
 
-    
+
 class ChannelShift(object):
     """Make a center crop of a specified size.
     Args:
-        max_range (int): range of percentage of the maximum pixel value to use as shift value (e.g. if max_range=20, the shift value will be randomly selected between -0.2*max(input) and 0.2*max(input))
+        max_range (int): range of percentage of the maximum pixel value to use as
+                         shift value (e.g. if max_range=20, the shift value will be
+                         randomly selected between -0.2*max(input) and 0.2*max(input))
         dtype (string): the data type to use while converting to numpy array (e.g. "float32")
     """
     def __init__(self, max_range, dtype):

@@ -10,23 +10,31 @@ import nibabel as nib
 class MRI2DSegDataset(Dataset):
     """This is a generic class for 2D (slice-wise) segmentation datasets.
 
-        The paths to the nifti files must be contained in a txt file following the structure (for an example with 2 classes):
+        The paths to the nifti files must be contained in a txt file following
+        the structure (for an example with 2 classes):
 
         input <path to input 1> class_1 <path to class 1 gt mask of input 1> class_2 <path to class 2 gt mask of input 1>
         input <path to input 2> class_1 <path to class 1 gt mask of input 2> class_2 <path to class 2 gt mask of input 2>
 
-        class_1 and class_2 can be any string (with no space) that will be used as class names.
-        For multi-class segmentation, there is no need to provide the background mask, it will be computed as the complementary of all other masks. Each segmentation class ground truth mus be in different 1 channel file.
+        class_1 and class_2 can be any string (with no space) that will be used
+        as class names.
+        For multi-class segmentation, there is no need to provide the background
+        mask, it will be computed as the complementary of all other masks. Each
+        segmentation class ground truth mus be in different 1 channel file.
         The inputs can be volumes of multichannel 2D images.
 
-    :param txt_path_file: the path to a txt file containing the list of paths to input data files and gt masks.
-    :param matrix_size: size of the slices (tuple of two integers). If the model contains p operations of pooling, the sizes should be multiples of 2^p.
+    :param txt_path_file: the path to a txt file containing the list of paths to
+    input data files and gt masks.
+    :param matrix_size: size of the slices (tuple of two integers). If the model
+    contains p operations of pooling, the sizes should be multiples of 2^p.
     :param orientation: string describing the orientation to use, e.g. "RAI".
-    :param resolution: string describing the resolution to use, e.g. "0.15x0.15".
+    :param resolution: string describing the resolution to use e.g. "0.15x0.15".
     :param data_type: data type to use for the tensors, e.g. "float32".
-    :param transform: transformation to apply for data augmentation. The transformation should take as argument and return a PIL image.
+    :param transform: transformation to apply for data augmentation.
+    The transformation should take as argument and return a PIL image.
     """
-    def __init__(self, txt_path_file, matrix_size, orientation, resolution, data_type="float32", transform=None):
+    def __init__(self, txt_path_file, matrix_size, orientation, resolution,
+                 data_type="float32", transform=None):
         self.filenames = []
         self.orientation = orientation
         self.resolution = resolution
@@ -53,17 +61,18 @@ class MRI2DSegDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.handlers[index]
-        sample = self.to_PIL(sample) # turn to PIL images to apply transformations
+        sample = self.to_PIL(sample)
 
         # apply transformations
         if self.transform:
             sample = self.transform(sample)
 
-        sample = self.to_tensor(sample) # turn to tensor to use in network
+        sample = self.to_tensor(sample)
 
         if len(sample['gt'])>1:    # if it is a multiclass problem
-            sample['gt'] = make_masks_exclusive(sample['gt']) # make sure gt masks are not overlapping due to transformations
-            sample['gt'] = self.add_background_gt(sample['gt']) # add background gt
+            # make sure gt masks are not overlapping due to transformations
+            sample['gt'] = make_masks_exclusive(sample['gt'])
+            sample['gt'] = self.add_background_gt(sample['gt'])
 
         return sample
 
@@ -97,25 +106,30 @@ class MRI2DSegDataset(Dataset):
             new_w, new_h = self.matrix_size
             if w<new_w or h<new_h:
                 print w, h
-                raise RuntimeError('Image smaller than required size : {}x{}, please provide images of equal or greater size.'.format(new_w, new_h))
+                raise RuntimeError('Image smaller than required size : {}x{}, '\
+                'please provide images of equal or greater size.'.format(new_w, new_h))
             w1 = (w-new_w)/2
             w2 = new_w+w1
             h1 = (h-new_h)/2
             h2 = new_h+h1
 
-            for i in range(input_image.shape[2]): # iterating over the z axis to get each 2D slice
+            # iterating over the z axis to get each 2D slice
+            for i in range(input_image.shape[2]):
                 input_slice = input_image.get_data()[w1:w2,h1:h2,i,...].astype(self.data_type)
                 if len(input_slice.shape)==2:
-                    input_slice = np.reshape(input_slice, (1,)+input_slice.shape) # if there is only one channel in input, add the channel dimension as first dimension
+                    # if there is only one channel in input, add the channel dimension as first dimension
+                    input_slice = np.reshape(input_slice, (1,)+input_slice.shape)
                 else:
-                    input_slice = np.moveaxis(input_slice, 2, 0) # if there are multiple channel, move axis to have the channel dimension as first dimension
+                    # if there are multiple channel, move axis to have the channel dimension as first dimension
+                    input_slice = np.moveaxis(input_slice, 2, 0)
                 gt_slices = [gt[w1:w2,h1:h2,i] for gt in gt_nps]
 
-                self.mean += np.mean(input_slice[0,:,:])/(input_image.shape[2]*len(self.filenames)) # compute mean of all the input slices (on 1st channel only, for input normalization in network)
+                # compute mean of all the input slices (on 1st channel only, for input normalization in network)
+                self.mean += np.mean(input_slice[0,:,:])/(input_image.shape[2]*len(self.filenames))
 
                 #sanity check for no overlap in gt masks
                 if np.max(sum(gt_slices))>1:
-                    raise RuntimeError('Ground truth masks overlapping in '+input_filename+'.')
+                    raise RuntimeError('Ground truth masks overlapping in {}.'.format(input_filename))
 
                 seg_item = {"input":input_slice, "gt":np.array(gt_slices)}
                 self.handlers.append(seg_item)
@@ -133,7 +147,7 @@ class MRI2DSegDataset(Dataset):
                         nib.load(line[2*i+1])
                     except Exception:
                         print line[2*i+1]
-                        raise RuntimeError("Invalid path in data paths textt file : "+line[2*i+1])
+                        raise RuntimeError("Invalid path in data paths textt file : {}".format(line[2*i+1]))
                     if(line[2*i]=="input"):
                         fnames[0]=line[2*i+1]
                     else:

@@ -46,7 +46,8 @@ def write_images(writer, input, output, predictions, gts, epoch, tag):
     :param tag: string to specify which dataset is used (e.g. "training" or "validation")
     """
     for i in range(input.size()[0]):
-        input_image = vutils.make_grid(input[i,:,:].clone().detach().to(dtype=torch.float32), normalize=True, scale_each=True)
+        input_image = vutils.make_grid(input[i,:,:].clone().detach().to(dtype=torch.float32),
+                                       normalize=True, scale_each=True)
         writer.add_image('Input channel '+str(i)+' '+tag, input_image, epoch)
     for i in range(gts.size()[0]):
         output_image = vutils.make_grid(output[i,:,:], normalize=True)

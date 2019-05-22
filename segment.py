@@ -9,7 +9,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", help="Path to the network model to use (.pt file).", required=True)
 parser.add_argument("-i", "--input", help="Path to the input NifTi file.", required=True)
-parser.add_argument("-o", "--output", help="Path for the output NifTi file, subscripts with class names will be added at the end.")
+parser.add_argument("-o", "--output", help="Path for the output NifTi file, "\
+                    "subscripts with class names will be added at the end.")
 parser.add_argument("-t", "--tag", help="Tag to add in the output file name.")
 args = parser.parse_args()
 
@@ -26,7 +27,7 @@ def segment(network_path, input_path, output_path, tag=""):
 
     if tag:
     	tag = "_"+tag
-    
+
     # orientation
     # nib.aff2axcodes(image.affine)
     #orientation = image.orientation
@@ -49,7 +50,8 @@ def segment(network_path, input_path, output_path, tag=""):
     input = np.moveaxis(image.get_data(), 2, 0) # use z dim as batchsize
     input = input[:,w1:w2,h1:h2] # crop images
     if len(input.shape)==3:
-        input = input.astype('float32').reshape(input.shape[0], 1, input.shape[1], input.shape[2]) # add 1 channel dim
+        input = input.astype('float32').reshape(input.shape[0], 1, input.shape[1],
+                                                input.shape[2]) # add 1 channel dim
     else:
         input = np.moveaxis(input, 3,1)
     input = torch.Tensor(input)
@@ -58,12 +60,13 @@ def segment(network_path, input_path, output_path, tag=""):
 
     if output.size()[1]==1:
         predictions = output.detach().numpy()>0.5
-        predictions = predictions.reshape(predictions.shape[0], predictions.shape[2], predictions.shape[3])
+        predictions = predictions.reshape(predictions.shape[0], predictions.shape[2],
+                                          predictions.shape[3])
     else:
         predictions = torch.argmax(output, 1, keepdim=False).numpy()
 
     class_names = network.class_names
-    
+
     # matrix size
     predictions = np.moveaxis(predictions, 0, 2)
     predictions_uncropped = np.zeros((w, h, predictions.shape[2]))
@@ -95,11 +98,3 @@ if args.tag:
     tag = args.tag
 
 segment(args.model, args.input, output_path, tag)
-
-    
-
-
-
-
-
-

@@ -10,27 +10,27 @@ class DownConv(nn.Module):
         self.conv1 = nn.Conv2d(in_feat, out_feat, kernel_size=3, padding=1)
         self.conv1_bn = nn.BatchNorm2d(out_feat, momentum=bn_momentum)
         self.conv1_drop = nn.Dropout2d(drop_rate)
-        
+
         self.conv2 = nn.Conv2d(out_feat, out_feat, kernel_size=3, padding=1)
         self.conv2_bn = nn.BatchNorm2d(out_feat, momentum=bn_momentum)
         self.conv2_drop = nn.Dropout2d(drop_rate)
-        
+
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = self.conv1_bn(x)
         x = self.conv1_drop(x)
-        
+
         x = F.relu(self.conv2(x))
         x = self.conv2_bn(x)
-        x = self.conv2_drop(x)        
+        x = self.conv2_drop(x)
         return x
-    
+
 class UpConv(nn.Module):
     def __init__(self, in_feat, out_feat, drop_rate=0.4, bn_momentum=0.1):
         super(UpConv, self).__init__()
         self.up1 = nn.Upsample(scale_factor=2, mode='bilinear')
         self.downconv = DownConv(in_feat, out_feat, drop_rate, bn_momentum)
-    
+
     def forward(self, x, y):
         with warnings.catch_warnings(): # ignore the depreciation warning related to nn.Upsample
             warnings.simplefilter("ignore")
@@ -41,7 +41,8 @@ class UpConv(nn.Module):
 
 
 class SmallUNet(nn.Module):
-    def __init__(self, nb_input_channels, orientation, resolution, matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
+    def __init__(self, nb_input_channels, orientation, resolution, matrix_size,
+                 class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
         super(SmallUNet, self).__init__()
 
         self.mean = mean
@@ -53,16 +54,16 @@ class SmallUNet(nn.Module):
         nb_classes = 1
         if len(class_names)>1:
             nb_classes=len(class_names)+1
-        
+
         #Downsampling path
         self.conv1 = DownConv(nb_input_channels, 32, drop_rate, bn_momentum)
         self.mp1 = nn.MaxPool2d(2)
 
         self.conv2 = DownConv(32, 64, drop_rate, bn_momentum)
-        self.mp2 = nn.MaxPool2d(2)    
+        self.mp2 = nn.MaxPool2d(2)
 
         self.conv3 = DownConv(64, 128, drop_rate, bn_momentum)
-        self.mp3 = nn.MaxPool2d(2)          
+        self.mp3 = nn.MaxPool2d(2)
 
         # Bottom
         self.conv4 = DownConv(128, 128, drop_rate, bn_momentum)
@@ -82,24 +83,24 @@ class SmallUNet(nn.Module):
 
         x3 = self.conv2(x2)
         x4 = self.mp2(x3)
-        
+
         x5 = self.conv3(x4)
-        x6 = self.mp3(x5)    
-        
+        x6 = self.mp3(x5)
+
         # Bottom
         x7 = self.conv4(x6)
-        
+
         # Up-sampling
         x8 = self.up1(x7, x5)
         x9 = self.up2(x8, x3)
         x10 = self.up3(x9, x1)
-        
+
         x11 = self.conv9(x10)
         if len(self.class_names)>1:
-            preds = F.softmax(x11, 1)        
+            preds = F.softmax(x11, 1)
         else:
             preds = F.sigmoid(x11)
-        
+
         return preds
 
 
@@ -117,7 +118,8 @@ class NoPoolASPP(nn.Module):
         Nature Scientific Reports link:
         https://www.nature.com/articles/s41598-018-24304-3
     """
-    def __init__(self, nb_input_channels, mean, std, orientation, resolution, matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, base_num_filters=64):
+    def __init__(self, nb_input_channels, mean, std, orientation, resolution,
+                 matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, base_num_filters=64):
         super(NoPoolASPP, self).__init__()
 
         self.mean = mean
@@ -276,7 +278,8 @@ class NoPoolASPP(nn.Module):
 class SegNet(nn.Module):
     """Segnet network."""
 
-    def __init__(self, nb_input_channels, class_names, mean, std, orientation, resolution, matrix_size, bn_momentum=0.1, drop_rate=0.4):
+    def __init__(self, nb_input_channels, class_names, mean, std, orientation,
+                 resolution, matrix_size, bn_momentum=0.1, drop_rate=0.4):
         """Init fields."""
         super(SegNet, self).__init__()
 
@@ -290,7 +293,7 @@ class SegNet(nn.Module):
         label_nbr = 1
         if len(class_names)>1:
             label_nbr=len(class_names)+1
-        
+
 
         self.conv11 = nn.Conv2d(nb_input_channels, 64, kernel_size=3, padding=1)
         self.bn11 = nn.BatchNorm2d(64, momentum=bn_momentum)
@@ -447,7 +450,8 @@ class SegNet(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, nb_input_channels, orientation, resolution, matrix_size, class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
+    def __init__(self, nb_input_channels, orientation, resolution, matrix_size,
+                 class_names, drop_rate=0.4, bn_momentum=0.1, mean=0., std=1.):
         super(UNet, self).__init__()
 
         self.mean = mean
@@ -459,19 +463,19 @@ class UNet(nn.Module):
         nb_classes = 1
         if len(class_names)>1:
             nb_classes=len(class_names)+1
-        
+
         #Downsampling path
         self.conv1 = DownConv(nb_input_channels, 64, drop_rate, bn_momentum)
         self.mp1 = nn.MaxPool2d(2)
 
         self.conv2 = DownConv(64, 128, drop_rate, bn_momentum)
-        self.mp2 = nn.MaxPool2d(2)    
+        self.mp2 = nn.MaxPool2d(2)
 
         self.conv3 = DownConv(128, 256, drop_rate, bn_momentum)
         self.mp3 = nn.MaxPool2d(2)
 
         self.conv4 = DownConv(256, 512, drop_rate, bn_momentum)
-        self.mp4 = nn.MaxPool2d(2)          
+        self.mp4 = nn.MaxPool2d(2)
 
         # Bottom
         self.conv5 = DownConv(512, 512, drop_rate, bn_momentum)
@@ -492,27 +496,27 @@ class UNet(nn.Module):
 
         x3 = self.conv2(x2)
         x4 = self.mp2(x3)
-        
+
         x5 = self.conv3(x4)
-        x6 = self.mp3(x5)    
+        x6 = self.mp3(x5)
 
         x7 = self.conv4(x6)
-        x8 = self.mp4(x7) 
-        
+        x8 = self.mp4(x7)
+
         # Bottom
         x9 = self.conv5(x8)
-        
+
         # Up-sampling
         x10 = self.up1(x9, x7)
         x11 = self.up2(x10, x5)
         x12 = self.up3(x11, x3)
         x13 = self.up4(x12, x1)
-        
+
         x14 = self.conv11(x13)
 
         if len(self.class_names)>1:
-            preds = F.softmax(x14, 1)        
+            preds = F.softmax(x14, 1)
         else:
             preds = F.sigmoid(x14)
-        
+
         return preds

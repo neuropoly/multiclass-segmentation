@@ -9,7 +9,7 @@ args = parser.parse_args()
 gpu_id = '0' # number of the GPU to use
 if args.GPU_id:
     gpu_id = args.GPU_id
-os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id 
+os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
 
 
 import torch
@@ -49,41 +49,81 @@ if torch.cuda.is_available():
 
 # defining transormations
 randomVFlip = transforms.RandomVerticalFlip()
-randomResizedCrop = transforms.RandomResizedCrop(parameters["input"]["matrix_size"], scale=parameters["transforms"]["scale_range"], ratio=parameters["transforms"]["ratio_range"], dtype=parameters['input']['data_type'])
+randomResizedCrop = transforms.RandomResizedCrop(parameters["input"]["matrix_size"],
+                                                 scale=parameters["transforms"]["scale_range"],
+                                                 ratio=parameters["transforms"]["ratio_range"],
+                                                 dtype=parameters['input']['data_type'])
 randomRotation = transforms.RandomRotation(parameters["transforms"]["max_angle"])
-elasticTransform = transforms.ElasticTransform(alpha_range=parameters["transforms"]["alpha_range"], sigma_range=parameters["transforms"]["sigma_range"], p=parameters["transforms"]["elastic_rate"], dtype=parameters['input']['data_type'])
-channelShift = transforms.ChannelShift(parameters["transforms"]["channel_shift_range"], dtype=parameters['input']['data_type'])
+elasticTransform = transforms.ElasticTransform(alpha_range=parameters["transforms"]["alpha_range"],
+                                               sigma_range=parameters["transforms"]["sigma_range"],
+                                               p=parameters["transforms"]["elastic_rate"],
+                                               dtype=parameters['input']['data_type'])
+channelShift = transforms.ChannelShift(parameters["transforms"]["channel_shift_range"],
+                                       dtype=parameters['input']['data_type'])
 centerCrop = transforms.CenterCrop2D(parameters["input"]["matrix_size"])
 
 # creating composed transformation
 composed = torch_transforms.Compose([randomVFlip,randomRotation,randomResizedCrop, elasticTransform])
 
 # creating datasets
-training_dataset = MRI2DSegDataset(paths.training_data, matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], transform = composed)
-validation_dataset = MRI2DSegDataset(paths.validation_data, matrix_size=parameters["input"]["matrix_size"], orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"])
+training_dataset = MRI2DSegDataset(paths.training_data,
+                                   matrix_size=parameters["input"]["matrix_size"],
+                                   orientation=parameters["input"]["orientation"],
+                                   resolution=parameters["input"]["resolution"],
+                                   transform = composed)
+validation_dataset = MRI2DSegDataset(paths.validation_data,
+                                     matrix_size=parameters["input"]["matrix_size"],
+                                     orientation=parameters["input"]["orientation"],
+                                     resolution=parameters["input"]["resolution"])
 
 # creating data loaders
-training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=True, num_workers=1)
-validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"], shuffle=True, drop_last=False, num_workers=1)
+training_dataloader = DataLoader(training_dataset, batch_size=parameters["training"]["batch_size"],
+                                 shuffle=True, drop_last=True, num_workers=1)
+validation_dataloader = DataLoader(validation_dataset, batch_size=parameters["training"]["batch_size"],
+                                   shuffle=True, drop_last=False, num_workers=1)
 
 parameters["input"]["training_data"]=paths.training_data
 parameters["input"]["validation_data"]=paths.validation_data
 
 ## CREATE NET ##
 
-nb_i = training_dataset[0]["input"].size()[0] # number of input channels 
+nb_i = training_dataset[0]["input"].size()[0] # number of input channels
 
 if parameters["net"]["model"] == "smallunet":
-    net = SmallUNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+    net = SmallUNet(nb_input_channels=nb_i, class_names=training_dataset.class_names,
+                    drop_rate=parameters["net"]["drop_rate"],
+                    bn_momentum=parameters["net"]["bn_momentum"],
+                    mean=training_dataset.mean, std=training_dataset.std,
+                    orientation=parameters["input"]["orientation"],
+                    resolution=parameters["input"]["resolution"],
+                    matrix_size=parameters["input"]["matrix_size"])
 
 elif parameters["net"]["model"] == "nopoolaspp":
-    net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"], drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+    net = NoPoolASPP(nb_input_channels=nb_i, class_names=training_dataset.class_names,
+                     mean=training_dataset.mean, std=training_dataset.std,
+                     orientation=parameters["input"]["orientation"],
+                     resolution=parameters["input"]["resolution"],
+                     matrix_size=parameters["input"]["matrix_size"],
+                     drop_rate=parameters["net"]["drop_rate"],
+                     bn_momentum=parameters["net"]["bn_momentum"])
 
 elif parameters["net"]["model"] == "segnet":
-    net = SegNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"], drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"])
+    net = SegNet(nb_input_channels=nb_i, class_names=training_dataset.class_names,
+                 mean=training_dataset.mean, std=training_dataset.std,
+                 orientation=parameters["input"]["orientation"],
+                 resolution=parameters["input"]["resolution"],
+                 matrix_size=parameters["input"]["matrix_size"],
+                 drop_rate=parameters["net"]["drop_rate"],
+                 bn_momentum=parameters["net"]["bn_momentum"])
 
 else:
-    net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names, drop_rate=parameters["net"]["drop_rate"], bn_momentum=parameters["net"]["bn_momentum"], mean=training_dataset.mean, std=training_dataset.std, orientation=parameters["input"]["orientation"], resolution=parameters["input"]["resolution"], matrix_size=parameters["input"]["matrix_size"])
+    net = UNet(nb_input_channels=nb_i, class_names=training_dataset.class_names,
+               drop_rate=parameters["net"]["drop_rate"],
+               bn_momentum=parameters["net"]["bn_momentum"],
+               mean=training_dataset.mean, std=training_dataset.std,
+               orientation=parameters["input"]["orientation"],
+               resolution=parameters["input"]["resolution"],
+               matrix_size=parameters["input"]["matrix_size"])
 
 
 # To use multiple GPUs :
@@ -100,7 +140,8 @@ net = net.to(device)
 if parameters["training"]["optimizer"]=="sgd":
     if not "sgd_momentum" in parameters["training"]:
         parameters["training"]['sgd_momentum']=0.9
-    optimizer = optim.SGD(net.parameters(), lr=parameters["training"]['learning_rate'], momentum=parameters["training"]['sgd_momentum'])
+    optimizer = optim.SGD(net.parameters(), lr=parameters["training"]['learning_rate'],
+                          momentum=parameters["training"]['sgd_momentum'])
 else:
     optimizer = optim.Adam(net.parameters(), lr=parameters["training"]['learning_rate'])
 
@@ -111,7 +152,7 @@ if parameters["training"]["loss_function"]=="dice":
         parameters["training"]['dice_smooth']=0.001
 
     loss_function = losses.Dice(smooth=parameters["training"]['dice_smooth'])
-    
+
 else:
     loss_function = losses.CrossEntropy()
 
@@ -133,8 +174,8 @@ else:
 ## TRAINING ##
 
 writer = SummaryWriter()
-writer.add_text("hyperparameters", json.dumps(parameters)) # add the hyperparameters to the description
-log_dir = writer.file_writer.get_logdir() # get the name of the directory of the current run (to save the model in that directory)
+writer.add_text("hyperparameters", json.dumps(parameters))
+log_dir = writer.file_writer.get_logdir()
 
 
 best_loss = float("inf")
@@ -143,13 +184,13 @@ batch_length = len(training_dataloader)
 print("Training network...")
 
 for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
-    
+
     loss_sum = 0.
     scheduler.step()
     net.train()
 
     writer.add_scalar("learning_rate", scheduler.get_lr()[0], epoch)
-    
+
     for i_batch, sample_batched in enumerate(training_dataloader):
         optimizer.zero_grad()
         input = sample_batched['input'].to(device)
@@ -160,7 +201,7 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
         optimizer.step()
         loss_sum += loss.item()/batch_length
 
-    predictions = torch.argmax(output, 1, keepdim=True).to("cpu") # get predicted class for each pixel (on cpu to compute metrics)
+    predictions = torch.argmax(output, 1, keepdim=True).to("cpu")
 
     # metrics
     monitoring.write_metrics(writer, predictions, gts, loss_sum, epoch, "training")
@@ -171,11 +212,12 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     pred_for_image = predictions[0,0,:,:]
     gts_for_image = gts[0]
 
-    monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "training")
-    
+    monitoring.write_images(writer, input_for_image, output_for_image,
+                            pred_for_image, gts_for_image, epoch, "training")
 
 
-    ## Validation ##  
+
+    ## Validation ##
 
     loss_sum = 0.
     net.eval()
@@ -200,8 +242,9 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     pred_for_image = predictions[0,0,:,:]
     gts_for_image = gts[0]
 
-    monitoring.write_images(writer, input_for_image, output_for_image, pred_for_image, gts_for_image, epoch, "validation")
-                
+    monitoring.write_images(writer, input_for_image, output_for_image,
+                            pred_for_image, gts_for_image, epoch, "validation")
+
 writer.close()
 
 os.system("cp "+paths.parameters+" "+log_dir+"/parameters.json")
