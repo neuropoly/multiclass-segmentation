@@ -231,6 +231,7 @@ for epoch in tqdm(range(parameters["training"]["nb_epochs"])):
     predictions = torch.argmax(output, 1, keepdim=True).to("cpu")
 
     if loss_sum < best_loss:
+        best_loss = loss_sum
         torch.save(net, "./"+log_dir+"/best_model.pt")
 
     # metrics
