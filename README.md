@@ -153,7 +153,7 @@ This category contains the hyper-parameters used to train the network.
 This category contains the the hyper-parameters used to define and parameterize the network model.
 
   - **model** (string) : architecture model of the network. Possible values are "unet" for the U-Net[1], "smallunet" for a modified U-Net with half less filters and one stage less deep, "segnet" for the SegNet[2] and "nopoolaspp" for the NoPoolASPP[3].
-  - **drop_rate** (float) : drop rate.
+  - **drop_rate** (float) : dropout rate.
   - **bn_momentum** (float) : batch normalization momentum.
 
 #### 4. Input
