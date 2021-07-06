@@ -1,5 +1,6 @@
 # Multiclass segmentation pipeline
 
+> ⚠️‎‎ This repository is no more maintained. If you would like to perform deep learning experiment and train models, please use [ivadomed](https://ivadomed.org), which is more up-to-date and is actively maintained.
 
 ## About
 
